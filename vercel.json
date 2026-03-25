@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "src/app/api/history/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/history-extended/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

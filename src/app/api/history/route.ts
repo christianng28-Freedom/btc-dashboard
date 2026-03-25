@@ -23,15 +23,25 @@ async function fetchBatch(endTime?: number): Promise<OHLCV[]> {
 
 export async function GET() {
   try {
-    // Fetch two batches of 1000 daily candles = ~2000 days of history
-    const batch1 = await fetchBatch()
+    // Fetch two batches of 1000 daily candles in parallel using pre-computed timestamps
+    const DAY_MS = 86_400_000
+    const now = Date.now()
+
+    const [batch1, batch2] = await Promise.all([
+      fetchBatch(),                        // most recent 1000 days
+      fetchBatch(now - 1000 * DAY_MS),     // 1000–2000 days ago
+    ])
     if (batch1.length === 0) throw new Error('No data returned from Binance')
 
-    // Fetch candles ending just before batch1's oldest entry
-    const oldestMs = batch1[0].time * 1000
-    const batch2 = await fetchBatch(oldestMs - 1)
-
+    // Merge, deduplicate, sort ascending
+    const seen = new Set<number>()
     const candles: OHLCV[] = [...batch2, ...batch1]
+      .filter((c) => {
+        if (seen.has(c.time)) return false
+        seen.add(c.time)
+        return true
+      })
+      .sort((a, b) => a.time - b.time)
 
     return NextResponse.json(
       { candles },

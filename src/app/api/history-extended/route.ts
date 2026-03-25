@@ -21,20 +21,30 @@ async function fetchBatch(endTime?: number): Promise<OHLCV[]> {
 
 export async function GET() {
   try {
-    // Fetch up to 4 batches of 1000 daily candles (~4000 days back to ~Sep 2017 Binance launch)
-    const batches: OHLCV[][] = []
+    // Fetch 4 batches of 1000 daily candles in parallel using pre-computed timestamps
+    // Each batch covers ~1000 days; offsets calculated from now
+    const DAY_MS = 86_400_000
+    const now = Date.now()
+    const endTimes = [
+      undefined,                     // most recent 1000 days
+      now - 1000 * DAY_MS,           // 1000–2000 days ago
+      now - 2000 * DAY_MS,           // 2000–3000 days ago
+      now - 3000 * DAY_MS,           // 3000–4000 days ago
+    ]
 
-    let batch = await fetchBatch()
-    if (batch.length === 0) throw new Error('No data from Binance')
+    const results = await Promise.all(endTimes.map((t) => fetchBatch(t)))
+    if (results[0].length === 0) throw new Error('No data from Binance')
 
-    for (let i = 0; i < 4; i++) {
-      batches.unshift(batch)
-      const oldest = batch[0]
-      batch = await fetchBatch(oldest.time * 1000 - 1)
-      if (batch.length === 0) break
-    }
-
-    const candles: OHLCV[] = batches.flat()
+    // Merge, deduplicate by timestamp, and sort ascending
+    const seen = new Set<number>()
+    const candles: OHLCV[] = results
+      .flat()
+      .filter((c) => {
+        if (seen.has(c.time)) return false
+        seen.add(c.time)
+        return true
+      })
+      .sort((a, b) => a.time - b.time)
 
     return NextResponse.json(
       { candles },
