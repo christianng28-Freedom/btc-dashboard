@@ -9,7 +9,7 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
-import type { OIDataPoint } from '@/app/api/fundamental/route'
+import type { OIDataPoint } from '@/lib/types/fundamental'
 
 interface Props {
   oiHistory: OIDataPoint[]
