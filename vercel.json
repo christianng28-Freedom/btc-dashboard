@@ -5,6 +5,12 @@
     },
     "src/app/api/history-extended/route.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/nupl/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/fundamental/route.ts": {
+      "maxDuration": 30
     }
   }
 }

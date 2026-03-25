@@ -41,7 +41,9 @@ export async function GET() {
 
     const allRows: CmRow[] = []
     let nextPageToken: string | null = null
+    const MAX_PAGES = 3 // Safety limit to prevent unbounded pagination on Vercel
 
+    let pageCount = 0
     do {
       const url = new URL(`${CM_BASE}/timeseries/asset-metrics`)
       url.searchParams.set('assets', 'btc')
@@ -54,6 +56,7 @@ export async function GET() {
 
       const res = await fetch(url.toString(), {
         headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(15000),
         next: { revalidate: 21600 }, // 6 hours
       })
       if (!res.ok) throw new Error(`CoinMetrics error: ${res.status}`)
@@ -61,7 +64,8 @@ export async function GET() {
       const json = (await res.json()) as { data: CmRow[]; next_page_token?: string }
       allRows.push(...json.data)
       nextPageToken = json.next_page_token ?? null
-    } while (nextPageToken)
+      pageCount++
+    } while (nextPageToken && pageCount < MAX_PAGES)
 
     const points: NuplDataPoint[] = allRows
       .filter(

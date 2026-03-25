@@ -23,9 +23,11 @@ export async function GET() {
   try {
     const [oiRes, fundingRes] = await Promise.all([
       fetch(`${FAPI_BASE}/futures/data/openInterestHist?symbol=BTCUSDT&period=1d&limit=100`, {
+        signal: AbortSignal.timeout(10000),
         next: { revalidate: 3600 },
       }),
       fetch(`${FAPI_BASE}/fapi/v1/premiumIndex?symbol=BTCUSDT`, {
+        signal: AbortSignal.timeout(10000),
         next: { revalidate: 300 },
       }),
     ])

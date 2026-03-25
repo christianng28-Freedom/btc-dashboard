@@ -18,7 +18,7 @@ export interface FearGreedResponse {
  * @param limit - Number of days to fetch (default 30)
  */
 export async function fetchFearGreed(limit = 30): Promise<FearGreedResponse> {
-  const res = await fetch(`${BASE_URL}/fng/?limit=${limit}`)
+  const res = await fetch(`${BASE_URL}/fng/?limit=${limit}`, { signal: AbortSignal.timeout(10000) })
   if (!res.ok) throw new Error(`Alternative.me fear & greed error: ${res.status}`)
   return res.json() as Promise<FearGreedResponse>
 }

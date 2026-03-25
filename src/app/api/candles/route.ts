@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     let candles: OHLCV[]
 
     const url = `${BINANCE_KLINES_BASE}?symbol=BTCUSDT&interval=${interval}&limit=${limit}`
-    const res = await fetch(url, { next: { revalidate: 60 } })
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000), next: { revalidate: 60 } })
     if (!res.ok) throw new Error(`Binance klines error: ${res.status}`)
     const raw = (await res.json()) as unknown[][]
     candles = raw.map((k) => ({

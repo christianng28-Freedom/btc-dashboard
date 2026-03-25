@@ -43,7 +43,8 @@ export interface CoinGeckoGlobal {
  */
 export async function fetchOHLC(days: number | 'max'): Promise<CoinGeckoOHLC[]> {
   const res = await fetch(
-    `${BASE_URL}/coins/bitcoin/ohlc?vs_currency=usd&days=${days}`
+    `${BASE_URL}/coins/bitcoin/ohlc?vs_currency=usd&days=${days}`,
+    { signal: AbortSignal.timeout(10000) }
   )
   if (!res.ok) throw new Error(`CoinGecko OHLC error: ${res.status}`)
   const raw = (await res.json()) as number[][]
@@ -61,7 +62,8 @@ export async function fetchOHLC(days: number | 'max'): Promise<CoinGeckoOHLC[]> 
  */
 export async function fetchMarketData(): Promise<CoinGeckoMarketData> {
   const res = await fetch(
-    `${BASE_URL}/coins/bitcoin?localization=false&tickers=false&community_data=false`
+    `${BASE_URL}/coins/bitcoin?localization=false&tickers=false&community_data=false`,
+    { signal: AbortSignal.timeout(10000) }
   )
   if (!res.ok) throw new Error(`CoinGecko market data error: ${res.status}`)
   return res.json() as Promise<CoinGeckoMarketData>
@@ -71,7 +73,7 @@ export async function fetchMarketData(): Promise<CoinGeckoMarketData> {
  * Fetch global crypto market data.
  */
 export async function fetchGlobal(): Promise<CoinGeckoGlobal> {
-  const res = await fetch(`${BASE_URL}/global`)
+  const res = await fetch(`${BASE_URL}/global`, { signal: AbortSignal.timeout(10000) })
   if (!res.ok) throw new Error(`CoinGecko global error: ${res.status}`)
   return res.json() as Promise<CoinGeckoGlobal>
 }

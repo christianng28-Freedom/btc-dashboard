@@ -6,7 +6,7 @@ const BINANCE_KLINES = 'https://api.binance.com/api/v3/klines'
 async function fetchBatch(endTime?: number): Promise<OHLCV[]> {
   const params = new URLSearchParams({ symbol: 'BTCUSDT', interval: '1d', limit: '1000' })
   if (endTime) params.set('endTime', String(endTime))
-  const res = await fetch(`${BINANCE_KLINES}?${params}`, { next: { revalidate: 3600 } })
+  const res = await fetch(`${BINANCE_KLINES}?${params}`, { signal: AbortSignal.timeout(10000), next: { revalidate: 3600 } })
   if (!res.ok) throw new Error(`Binance klines error: ${res.status}`)
   const raw = (await res.json()) as unknown[][]
   return raw.map((k) => ({
