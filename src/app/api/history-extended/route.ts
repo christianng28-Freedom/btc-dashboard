@@ -17,7 +17,7 @@ async function fetchBatch(toTs?: number): Promise<OHLCV[]> {
   if (toTs) params.set('toTs', String(toTs))
   const res = await fetch(`${CC_HISTODAY}?${params}`, {
     signal: AbortSignal.timeout(10000),
-    next: { revalidate: 3600 },
+    cache: 'no-store',
   })
   if (!res.ok) throw new Error(`CryptoCompare error: ${res.status}`)
   const json = (await res.json()) as { Response: string; Data: { Data: CCCandle[] } }
