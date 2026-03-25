@@ -36,7 +36,7 @@ export default function AppleIcon() {
               lineHeight: 1,
             }}
           >
-            ₿
+            B
           </span>
         </div>
       </div>
