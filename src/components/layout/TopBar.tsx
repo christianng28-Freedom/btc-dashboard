@@ -154,7 +154,7 @@ export function TopBar() {
           />
           <div className="w-[3px] h-2 rounded-full bg-[#00A3FF]/35" />
         </div>
-        <div className="flex flex-col gap-[2px]">
+        <div className="flex flex-col gap-0.5">
           <span className="text-white font-black text-[13px] tracking-wide uppercase leading-none">COMMAND</span>
           <span className="text-[#00A3FF]/60 text-[8px] tracking-[0.3em] uppercase leading-none">Centre</span>
         </div>
