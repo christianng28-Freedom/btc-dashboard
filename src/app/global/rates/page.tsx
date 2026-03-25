@@ -312,30 +312,104 @@ function SectionHeader({ title, description }: { title: string; description?: st
   )
 }
 
-// ── MOVE index placeholder ─────────────────────────────────────────────────
+// ── MOVE index chart ───────────────────────────────────────────────────────
 
-function MOVEPlaceholder() {
-  return (
-    <div className="bg-[#0d0d14] border border-dashed border-[#1a1a2e] rounded-xl p-6">
-      <div className="flex items-start gap-4">
-        <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-[#e0e0e0] font-mono">ICE BofA MOVE Index</span>
-            <span className="text-[9px] font-mono bg-[#1a1a2e] text-[#555566] rounded px-2 py-0.5">
-              COMING SOON
-            </span>
+interface MOVEChartProps {
+  data: DataPoint[]
+  isLoading?: boolean
+  isError?: boolean
+}
+
+function MOVEChart({ data, isLoading, isError }: MOVEChartProps) {
+  const height = 240
+
+  const body = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center text-[#555566] text-xs font-mono" style={{ height }}>
+          Loading…
+        </div>
+      )
+    }
+    if (isError || data.length === 0) {
+      return (
+        <div className="flex items-center justify-center border border-dashed border-[#1a1a2e] rounded-lg" style={{ height }}>
+          <div className="text-[10px] font-mono text-[#444455]">
+            {isError ? 'Failed to load data' : 'No data'}
           </div>
-          <p className="text-[10px] text-[#555566] font-mono max-w-xl">
-            The Merrill Lynch Option Volatility Estimate (MOVE) measures implied volatility in US
-            Treasury markets — the bond market equivalent of the VIX. Tracks 1-month options on 2Y,
-            5Y, 10Y, and 30Y Treasuries. High readings signal elevated rate uncertainty; low readings
-            indicate complacency. ICE BofA data is not publicly available via a free API.
-          </p>
-          <p className="text-[9px] font-mono text-[#444455]">
-            Typical ranges: Calm &lt;60 · Elevated 80-100 · Stressed &gt;120
-          </p>
+        </div>
+      )
+    }
+
+    const step = Math.max(1, Math.floor(data.length / 300))
+    const sampled = data.filter((_, i) => i % step === 0 || i === data.length - 1)
+
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <ComposedChart data={sampled} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+          <XAxis
+            dataKey="date"
+            tick={CHART_AXIS}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(d: string) => d.slice(0, 7)}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            tick={CHART_AXIS}
+            tickLine={false}
+            axisLine={false}
+            width={36}
+          />
+          <Tooltip
+            formatter={(v: unknown) => [`${(v as number).toFixed(1)}`, 'MOVE']}
+            labelFormatter={(l) => l as string}
+            contentStyle={CHART_TOOLTIP}
+            labelStyle={{ color: '#666' }}
+          />
+          {/* Zone reference lines */}
+          <ReferenceLine
+            y={60}
+            stroke="#22c55e"
+            strokeDasharray="4 4"
+            label={{ value: 'Calm <60', position: 'insideTopLeft', fill: '#22c55e', fontSize: 8, fontFamily: 'monospace' }}
+          />
+          <ReferenceLine
+            y={100}
+            stroke="#f59e0b"
+            strokeDasharray="4 4"
+            label={{ value: 'Elevated 80-100', position: 'insideTopLeft', fill: '#f59e0b', fontSize: 8, fontFamily: 'monospace' }}
+          />
+          <ReferenceLine
+            y={120}
+            stroke="#ef4444"
+            strokeDasharray="4 4"
+            label={{ value: 'Stressed >120', position: 'insideTopLeft', fill: '#ef4444', fontSize: 8, fontFamily: 'monospace' }}
+          />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#a78bfa"
+            strokeWidth={1.5}
+            dot={false}
+            connectNulls
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  return (
+    <div className="bg-[#0d0d14] border border-[#1a1a2e] rounded-xl p-5 space-y-3">
+      <div>
+        <div className="text-xs font-bold text-[#e0e0e0] font-mono">ICE BofAML MOVE Index (^MOVE)</div>
+        <div className="text-[10px] text-[#555566] font-mono">
+          Bond market implied volatility — 1-month options on 2Y, 5Y, 10Y & 30Y Treasuries. High = rate uncertainty, Low = complacency.
         </div>
       </div>
+      {body()}
+      <div className="text-[9px] font-mono text-[#333344]">Source: Yahoo Finance (^MOVE) · Delayed quote</div>
     </div>
   )
 }
@@ -350,6 +424,7 @@ export default function TreasuryRatesPage() {
   const keyRates  = data?.keyRates
   const credit    = data?.credit
   const realRates = data?.realRates
+  const move      = data?.move
   const recBands  = data?.recessionBands ?? []
 
   // ── Snapshot stat cards ─────────────────────────────────────────────────
@@ -612,7 +687,22 @@ export default function TreasuryRatesPage() {
           title="MOVE Index"
           description="Bond market implied volatility — the rate equivalent of VIX."
         />
-        <MOVEPlaceholder />
+        {move?.latest && (
+          <MetricHeatmapStrip metrics={[{
+            label: 'MOVE Index',
+            value: move.latest.value.toFixed(1),
+            rawValue: move.latest.value,
+            change: move.latest.change,
+            colorScheme: 'red-green',
+            thresholds: { low: 60, high: 120 },
+            sub: move.latest.value < 60 ? 'Calm' : move.latest.value < 100 ? 'Elevated' : 'Stressed',
+          }]} />
+        )}
+        <MOVEChart
+          data={move?.history ?? []}
+          isLoading={isLoading}
+          isError={isError}
+        />
       </section>
 
       {/* ── Real Rates & Inflation Expectations ───────────────────────────── */}

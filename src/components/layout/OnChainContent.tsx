@@ -13,6 +13,7 @@ const SECTIONS = [
 
 function SectionNav() {
   const [activeId, setActiveId] = useState<string>(SECTIONS[0].id)
+  const [collapsed, setCollapsed] = useState(false)
   const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -46,23 +47,59 @@ function SectionNav() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
+  const activeLabel = SECTIONS.find(s => s.id === activeId)?.label ?? ''
+
   return (
-    <nav ref={navRef} className="sticky top-0 z-30 -mx-1 px-1 py-3 bg-[#0a0a1a]/90 backdrop-blur-md border-b border-[#1a1a2e] mb-6">
-      <div className="flex flex-wrap gap-2">
-        {SECTIONS.map(({ id, label }) => (
+    <nav ref={navRef} className="sticky top-0 z-30 -mx-1 px-1 bg-[#0a0a1a]/90 backdrop-blur-md border-b border-[#1a1a2e] mb-4">
+      {/* Collapsed strip */}
+      {collapsed ? (
+        <div className="flex items-center justify-between py-2 gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f7931a] flex-shrink-0" />
+            <span className="text-xs font-medium text-[#f7931a] truncate">{activeLabel}</span>
+          </div>
           <button
-            key={id}
-            onClick={() => scrollTo(id)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-              activeId === id
-                ? 'bg-[#f7931a]/15 text-[#f7931a] border border-[#f7931a]/30'
-                : 'bg-[#111827] text-[#888] border border-[#1a1a2e] hover:text-white hover:border-[#333]'
-            }`}
+            onClick={() => setCollapsed(false)}
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#555] hover:text-[#888] border border-[#1a1a2e] hover:border-[#333] transition-colors"
+            title="Show sections"
           >
-            {label}
+            <span>Sections</span>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        /* Expanded nav */
+        <div className="py-2.5">
+          <div className="flex items-start gap-2">
+            <div className="flex flex-wrap gap-2 flex-1">
+              {SECTIONS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => scrollTo(id)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                    activeId === id
+                      ? 'bg-[#f7931a]/15 text-[#f7931a] border border-[#f7931a]/30'
+                      : 'bg-[#111827] text-[#888] border border-[#1a1a2e] hover:text-white hover:border-[#333]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCollapsed(true)}
+              className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded text-[10px] text-[#555] hover:text-[#888] border border-[#1a1a2e] hover:border-[#333] transition-colors mt-0.5"
+              title="Collapse nav"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

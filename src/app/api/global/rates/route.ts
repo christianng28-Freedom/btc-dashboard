@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchFREDSeries } from '@/lib/api/fred'
+import { fetchYahooFinanceDaily, fetchYahooFinanceQuote } from '@/lib/api/yahoo-finance'
 
 export type DataPoint = { date: string; value: number }
 
@@ -59,6 +60,10 @@ export interface RatesData {
     }
   }
   recessionBands: Array<{ start: string; end: string }>
+  move: {
+    history: DataPoint[]
+    latest: { value: number; change: number; changePercent: number; date: string } | null
+  }
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -143,6 +148,7 @@ export async function GET() {
       bamlhyMap, bamlcigMap,
       dfii10Map, t10yieMap,
       usrecMap,
+      moveMap, moveQuote,
     ] = await Promise.all([
       fetchFREDSeries('DGS1MO',       '2015-01-01', 21600),
       fetchFREDSeries('DGS3MO',       '2015-01-01', 21600),
@@ -164,6 +170,8 @@ export async function GET() {
       fetchFREDSeries('DFII10',       '2015-01-01', 21600),
       fetchFREDSeries('T10YIE',       '2015-01-01', 21600),
       fetchFREDSeries('USREC',        '2015-01-01', 86400),
+      fetchYahooFinanceDaily('^MOVE', '5y', 21600).catch(() => new Map<string, number>()),
+      fetchYahooFinanceQuote('^MOVE').catch(() => null),
     ])
 
     // ── Yield Curve Snapshot ─────────────────────────────────────────────
@@ -218,6 +226,17 @@ export async function GET() {
 
     // ── Recession Bands ──────────────────────────────────────────────────
     const recessionBands = computeRecessionBands(usrecMap, '2015-01-01')
+
+    // ── MOVE Index ───────────────────────────────────────────────────────
+    const moveArr = mapToArray(moveMap)
+    const moveLatest = moveQuote
+      ? {
+          value:         r2(moveQuote.price),
+          change:        r2(moveQuote.price - moveQuote.previousClose),
+          changePercent: r2(moveQuote.changePercent),
+          date:          last(moveArr)?.date ?? '',
+        }
+      : null
 
     const data: RatesData = {
       snapshot: {
@@ -313,6 +332,10 @@ export async function GET() {
         },
       },
       recessionBands,
+      move: {
+        history: moveArr,
+        latest:  moveLatest,
+      },
     }
 
     return NextResponse.json(data, {

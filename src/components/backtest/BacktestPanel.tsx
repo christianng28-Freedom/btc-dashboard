@@ -23,10 +23,9 @@ export function BacktestPanel({ compact = false }: Props) {
 
   const toggleStrategy = useCallback((id: StrategyId) => {
     setActiveStrategies(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
+      // If already the only active strategy, deselect it; otherwise select exclusively
+      if (prev.has(id) && prev.size === 1) return new Set()
+      return new Set([id])
     })
   }, [])
 

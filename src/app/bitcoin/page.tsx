@@ -55,12 +55,12 @@ export default function DashboardHome() {
   const taScore = useTechnicalIndicators(candles, historyCandles, dominancePct)
 
   const fundamentalScore = useMemo(() => {
-    if (!fgCurrent || !fundData) return null
+    if (!fgCurrent) return null
     return calcFundamentalScore({
       fearGreed: parseInt(fgCurrent.value, 10),
-      oiValue: fundData.currentOI,
-      oi90dMA: fundData.oi90dMA,
-      fundingRate: fundData.currentFundingRate,
+      oiValue: fundData?.currentOI ?? 0,
+      oi90dMA: fundData?.oi90dMA ?? 0,
+      fundingRate: fundData?.currentFundingRate ?? 0,
     })
   }, [fgCurrent, fundData])
 

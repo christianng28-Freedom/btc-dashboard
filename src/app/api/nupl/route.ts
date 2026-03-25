@@ -59,6 +59,13 @@ export async function GET() {
         signal: AbortSignal.timeout(15000),
         next: { revalidate: 21600 }, // 6 hours
       })
+      // 403 = community key blocked; return empty gracefully so the score uses neutral defaults
+      if (res.status === 403) {
+        return NextResponse.json(
+          { data: [] },
+          { headers: { 'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=3600' } }
+        )
+      }
       if (!res.ok) throw new Error(`CoinMetrics error: ${res.status}`)
 
       const json = (await res.json()) as { data: CmRow[]; next_page_token?: string }

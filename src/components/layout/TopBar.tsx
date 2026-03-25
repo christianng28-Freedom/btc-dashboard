@@ -154,28 +154,31 @@ export function TopBar() {
           />
           <div className="w-[3px] h-2 rounded-full bg-[#00A3FF]/35" />
         </div>
-        <div className="flex flex-col gap-0">
-          <span className="text-white font-black text-[13px] tracking-tight uppercase leading-none">COMMAND</span>
-          <span className="text-[#00A3FF]/60 text-[8px] tracking-[0.28em] uppercase leading-none">Centre</span>
+        <div className="flex flex-col gap-[2px]">
+          <span className="text-white font-black text-[13px] tracking-wide uppercase leading-none">COMMAND</span>
+          <span className="text-[#00A3FF]/60 text-[8px] tracking-[0.3em] uppercase leading-none">Centre</span>
         </div>
       </div>
 
-      <div className="flex-1" />
-
-      {/* Market ticker cards */}
-      <div className="flex items-center gap-2">
-        {/* BTC always visible */}
-        <TickerCard
-          label="Bitcoin"
-          icon={<BitcoinIcon />}
-          price={btcPrice}
-          change={btcChange}
-          isPositive={btcPositive}
-          loading={isLoading || price === 0}
+      {/* Market ticker cards — horizontally scrollable on mobile */}
+      <div className="relative flex-1 min-w-0">
+        {/* Right fade hint — indicates more content to scroll */}
+        <div
+          className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 z-10"
+          style={{ background: 'linear-gradient(to left, #05070A 0%, transparent 100%)' }}
         />
-
-        {/* SOL visible on sm+ (640px — landscape iPhone and up) */}
-        <div className="hidden sm:block">
+        <div
+          className="flex items-center gap-2 overflow-x-auto lg:overflow-visible lg:justify-end w-full"
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        >
+          <TickerCard
+            label="Bitcoin"
+            icon={<BitcoinIcon />}
+            price={btcPrice}
+            change={btcChange}
+            isPositive={btcPositive}
+            loading={isLoading || price === 0}
+          />
           <TickerCard
             label="Solana"
             icon={<SolanaIcon />}
@@ -184,10 +187,6 @@ export function TopBar() {
             isPositive={solPositive}
             loading={indicesLoading || !indices}
           />
-        </div>
-
-        {/* Gold visible on md+ (768px+) */}
-        <div className="hidden md:block">
           <TickerCard
             label="Gold"
             icon={<GoldIcon />}
@@ -196,10 +195,6 @@ export function TopBar() {
             isPositive={goldPositive}
             loading={indicesLoading || !indices}
           />
-        </div>
-
-        {/* Indices visible on lg+ (1024px+) */}
-        <div className="hidden lg:block">
           <TickerCard
             label="S&P 500"
             price={spxPrice}
@@ -207,9 +202,6 @@ export function TopBar() {
             isPositive={spxPositive}
             loading={indicesLoading || !indices}
           />
-        </div>
-
-        <div className="hidden lg:block">
           <TickerCard
             label="NASDAQ 100"
             price={ndxPrice}
