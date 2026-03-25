@@ -112,7 +112,7 @@ export function YieldCurveSnapshotChart({
             width={40}
           />
           <Tooltip
-            formatter={(v: unknown, name: string) => [
+            formatter={(v: unknown, name: string | number | undefined) => [
               `${Number(v).toFixed(2)}%`,
               name,
             ]}

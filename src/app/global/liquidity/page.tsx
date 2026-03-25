@@ -177,7 +177,7 @@ function NetLiquidityChart({
           <Tooltip
             labelStyle={{ color: '#666' }}
             contentStyle={TOOLTIP_CSS}
-            formatter={(value: unknown, name: string) => {
+            formatter={(value: unknown, name: string | number | undefined) => {
               const v = value as number
               if (name === 'net')  return [fmtB(v), 'Net Liquidity']
               if (name === 'btc')  return [`$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'BTC Price']
@@ -264,10 +264,11 @@ function NetLiquidityComponents({
           <Tooltip
             labelStyle={{ color: '#666' }}
             contentStyle={TOOLTIP_CSS}
-            formatter={(value: unknown, name: string) => {
+            formatter={(value: unknown, name: string | number | undefined) => {
               const v = value as number
               const labels: Record<string, string> = { fedBalance: 'Fed BS', tga: 'TGA', rrp: 'RRP' }
-              return [fmtB(v), labels[name] ?? name]
+              const key = String(name ?? '')
+              return [fmtB(v), labels[key] ?? key]
             }}
           />
           <Legend
@@ -360,9 +361,9 @@ function FedBalanceChart({
           <Tooltip
             labelStyle={{ color: '#666' }}
             contentStyle={TOOLTIP_CSS}
-            formatter={(value: unknown, name: string) => {
+            formatter={(value: unknown, name: string | number | undefined) => {
               const labels: Record<string, string> = { total: 'Total Assets', treas: 'Treasuries', mbs: 'MBS' }
-              return [fmtB(value as number), labels[name] ?? name]
+              return [fmtB(value as number), labels[String(name ?? '')] ?? name]
             }}
           />
           {/* QE4 */}
@@ -523,9 +524,9 @@ function GlobalM2IndexedChart({
           <Tooltip
             labelStyle={{ color: '#666' }}
             contentStyle={TOOLTIP_CSS}
-            formatter={(value: unknown, name: string) => {
+            formatter={(value: unknown, name: string | number | undefined) => {
               const labels: Record<string, string> = { us: 'US M2', eu: 'EU M2', jp: 'JP M2', cn: 'CN M2' }
-              return [`${(value as number).toFixed(1)}`, labels[name] ?? name]
+              return [`${(value as number).toFixed(1)}`, labels[String(name ?? '')] ?? name]
             }}
           />
           <ReferenceLine y={100} stroke="#333344" strokeDasharray="3 3" />
@@ -611,11 +612,11 @@ function GlobalM2YoYChart({
           <Tooltip
             labelStyle={{ color: '#666' }}
             contentStyle={TOOLTIP_CSS}
-            formatter={(value: unknown, name: string) => {
+            formatter={(value: unknown, name: string | number | undefined) => {
               const v = value as number
               if (name === 'btc') return [`$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`, 'BTC Price']
               const labels: Record<string, string> = { us: 'US M2 YoY', eu: 'EU M2 YoY', jp: 'JP M2 YoY', cn: 'CN M2 YoY' }
-              return [fmtPct(v), labels[name] ?? name]
+              return [fmtPct(v), labels[String(name ?? '')] ?? name]
             }}
           />
           <ReferenceLine yAxisId="left" y={0} stroke="#333344" strokeDasharray="3 3" />
@@ -693,9 +694,9 @@ function CreditGrowthChart({
             <Tooltip
               labelStyle={{ color: '#666' }}
               contentStyle={TOOLTIP_CSS}
-              formatter={(value: unknown, name: string) => {
+              formatter={(value: unknown, name: string | number | undefined) => {
                 const labels: Record<string, string> = { total: 'Total Bank Credit', biz: 'C&I Loans' }
-                return [fmtB(value as number), labels[name] ?? name]
+                return [fmtB(value as number), labels[String(name ?? '')] ?? name]
               }}
             />
             <Line type="monotone" dataKey="total" stroke="#34d399" strokeWidth={2}   dot={false} connectNulls />
@@ -725,9 +726,9 @@ function CreditGrowthChart({
             <Tooltip
               labelStyle={{ color: '#666' }}
               contentStyle={TOOLTIP_CSS}
-              formatter={(value: unknown, name: string) => {
+              formatter={(value: unknown, name: string | number | undefined) => {
                 const labels: Record<string, string> = { total: 'Total Credit YoY', biz: 'C&I Loans YoY' }
-                return [fmtPct(value as number), labels[name] ?? name]
+                return [fmtPct(value as number), labels[String(name ?? '')] ?? name]
               }}
             />
             <ReferenceLine y={0} stroke="#555566" strokeDasharray="3 3" />

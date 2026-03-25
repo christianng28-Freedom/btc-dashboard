@@ -105,7 +105,7 @@ function YieldCurveHistoryChart({
             width={40}
           />
           <Tooltip
-            formatter={(v: unknown, name: string) => [
+            formatter={(v: unknown, name: string | number | undefined) => [
               `${(v as number).toFixed(2)}%`,
               name,
             ]}
@@ -231,7 +231,7 @@ function CreditSpreadChart({ hyOas, igOas, isLoading, isError }: CreditProps) {
             width={44}
           />
           <Tooltip
-            formatter={(v: unknown, name: string) => [
+            formatter={(v: unknown, name: string | number | undefined) => [
               `${(v as number).toFixed(2)}% (${Math.round((v as number) * 100)} bps)`,
               name,
             ]}

@@ -27,7 +27,7 @@ function SectionNav() {
 
     const handleScroll = () => {
       const threshold = scrollContainer!.getBoundingClientRect().top + 120
-      let current = SECTIONS[0].id
+      let current: string = SECTIONS[0].id
       for (const { id } of SECTIONS) {
         const el = document.getElementById(id)
         if (el && el.getBoundingClientRect().top <= threshold) {
