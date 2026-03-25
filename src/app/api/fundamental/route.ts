@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+export const preferredRegion = 'fra1' // Frankfurt — avoids Binance US geo-block
+
 const FAPI_BASE = 'https://fapi.binance.com'
 const BYBIT_BASE = 'https://api.bybit.com'
 
@@ -141,10 +143,10 @@ export async function GET() {
   try {
     let data: FundamentalData
     try {
-      data = await fetchFromBinance()
-    } catch (binanceErr) {
-      console.warn('Binance fundamental fetch failed, falling back to Bybit:', binanceErr)
       data = await fetchFromBybit()
+    } catch (bybitErr) {
+      console.warn('Bybit fundamental fetch failed, falling back to Binance:', bybitErr)
+      data = await fetchFromBinance()
     }
 
     return NextResponse.json(data, {

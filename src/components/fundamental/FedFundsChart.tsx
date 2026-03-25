@@ -104,19 +104,18 @@ export function FedFundsChart({ data, isLoading, isError }: Props) {
             width={36}
           />
           <Tooltip
-            formatter={(v, key) => {
-              if (key === 'lower') return [`${v}%`, 'Lower bound']
-              if (key === 'spread') return [`${(v as number).toFixed(2)}%`, 'Range']
-              return [v, key]
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null
+              const lower = payload.find(p => p.dataKey === 'lower')?.value as number ?? 0
+              const spread = payload.find(p => p.dataKey === 'spread')?.value as number ?? 0
+              const upper = lower + spread
+              return (
+                <div style={{ background: '#0d0d14', border: '1px solid #1a1a2e', padding: '6px 10px', fontSize: 10, fontFamily: 'monospace' }}>
+                  <div style={{ color: '#666', marginBottom: 4 }}>{label as string}</div>
+                  <div style={{ color: '#f59e0b' }}>Rate: {lower.toFixed(2)}–{upper.toFixed(2)}%</div>
+                </div>
+              )
             }}
-            labelFormatter={(l) => l as string}
-            contentStyle={{
-              background: '#0d0d14',
-              border: '1px solid #1a1a2e',
-              fontSize: 10,
-              fontFamily: 'monospace',
-            }}
-            labelStyle={{ color: '#666' }}
           />
           {/* Transparent base for stacking */}
           <Area

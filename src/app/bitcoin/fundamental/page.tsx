@@ -189,6 +189,10 @@ export default function FundamentalPage() {
                   {fundamentalScore.indicatorCount} of 9 indicators
                 </div>
               </div>
+            ) : fundError ? (
+              <div className="flex-1 flex items-center justify-center text-[#555] text-sm font-mono">
+                Failed to load score data
+              </div>
             ) : (
               <div className="flex-1 flex items-center justify-center text-[#555] text-sm font-mono">
                 Loading…
