@@ -220,7 +220,15 @@ export function NavSidebar() {
       <div className="flex flex-col h-full rounded-xl border border-white/[0.07] overflow-hidden"
         style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(30px)' }}>
 
-        <nav className="flex flex-col gap-3 px-2 pt-4 pb-2">
+        {/* Scrollable nav — needed on small landscape screens */}
+        <div className="relative flex-1 min-h-0">
+          {/* Fade hint at bottom — visible on non-desktop when overflow may occur */}
+          <div
+            className="lg:hidden pointer-events-none absolute bottom-0 left-0 right-0 h-8 z-10 rounded-b-xl"
+            style={{ background: 'linear-gradient(to top, rgba(10,12,18,0.85) 0%, transparent 100%)' }}
+          />
+        <nav className="flex flex-col gap-3 px-2 pt-4 pb-4 overflow-y-auto h-full"
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
           {navGroups.map((group) => (
             <div key={group.label}>
               {/* Group label — only visible on large screens */}
@@ -292,6 +300,7 @@ export function NavSidebar() {
             </div>
           ))}
         </nav>
+        </div>
 
         {/* Bottom profile section */}
         <div className="mt-auto px-2 py-3 border-t border-white/[0.05]">

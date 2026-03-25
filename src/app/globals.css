@@ -28,6 +28,11 @@
   --font-mono: var(--font-mono);
 }
 
+/* Hide scrollbar in sidebar nav (mobile landscape) */
+nav::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --background: #05070A;
   --foreground: #e0e0e0;
