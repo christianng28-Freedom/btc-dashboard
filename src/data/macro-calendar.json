@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2026-03-27",
+    "event": "PCE Inflation",
+    "period": "Feb 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-04-03",
+    "event": "NFP",
+    "period": "Mar 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-04-10",
+    "event": "CPI",
+    "period": "Mar 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-04-28",
+    "event": "FOMC",
+    "period": "Apr/May 2026",
+    "category": "fomc",
+    "description": "Federal Open Market Committee Rate Decision"
+  },
+  {
+    "date": "2026-04-30",
+    "event": "PCE Inflation",
+    "period": "Mar 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-05-01",
+    "event": "NFP",
+    "period": "Apr 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-05-13",
+    "event": "CPI",
+    "period": "Apr 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-06-17",
+    "event": "FOMC",
+    "period": "Jun 2026",
+    "category": "fomc",
+    "description": "Federal Open Market Committee Rate Decision"
+  }
+]

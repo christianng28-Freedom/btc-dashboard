@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Dashboard</title>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+        .price-display { display: flex; align-items: baseline; gap: 12px; }
+        .current-price { font-size: 28px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+        .price-change { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+        .price-change.up { color: #22c55e; }
+        .price-change.down { color: #ef4444; }
+        .ema-legend { display: flex; gap: 20px; align-items: center; }
+        .ema-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+        .ema-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .ema-value { font-variant-numeric: tabular-nums; color: #999; }
+        .timeframe-buttons { display: flex; gap: 4px; }
+        .timeframe-buttons button {
+            background: transparent;
+            border: 1px solid #2a2a3e;
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .timeframe-buttons button:hover { border-color: #444; color: #ccc; }
+        .timeframe-buttons button.active { background: #1a1a2e; border-color: #3b82f6; color: #fff; }
+        .status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ── Layout ── */
+        .main-area { display: flex; height: calc(100vh - 100px); }
+        #chart-container { flex: 1; min-width: 0; height: 100%; }
+
+        /* ── Backtest Panel ── */
+        .backtest-panel {
+            width: 340px;
+            flex-shrink: 0;
+            background: #0d0d14;
+            border-left: 1px solid #1a1a2e;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-section {
+            padding: 16px;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .panel-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .strategy-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border: 1px solid transparent;
+        }
+        .strategy-option:hover { background: #12121f; }
+        .strategy-option.active { background: #12121f; border-color: #2a2a3e; }
+        .strategy-label { display: flex; flex-direction: column; gap: 2px; }
+        .strategy-name { font-size: 13px; font-weight: 500; color: #ddd; }
+        .strategy-desc { font-size: 11px; color: #666; }
+        .toggle-switch {
+            width: 36px; height: 20px;
+            background: #2a2a3e;
+            border-radius: 10px;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .toggle-switch.on { background: #f59e0b; }
+        .toggle-switch::after {
+            content: '';
+            width: 16px; height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px; left: 2px;
+            transition: transform 0.2s;
+        }
+        .toggle-switch.on::after { transform: translateX(16px); }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .stat-card {
+            background: #111120;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .stat-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+        .stat-value { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .stat-value.positive { color: #22c55e; }
+        .stat-value.negative { color: #ef4444; }
+        .stat-value.neutral { color: #f59e0b; }
+        .stat-card.full-width { grid-column: 1 / -1; }
+
+        /* Trade log */
+        .trade-log { max-height: 300px; overflow-y: auto; }
+        .trade-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #111122;
+            font-size: 12px;
+        }
+        .trade-row:last-child { border-bottom: none; }
+        .trade-side {
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .trade-side.buy { background: #22c55e22; color: #22c55e; }
+        .trade-side.sell { background: #ef444422; color: #ef4444; }
+        .trade-pnl { font-weight: 500; font-variant-numeric: tabular-nums; }
+        .equity-mini { width: 100%; height: 80px; margin-top: 8px; }
+
+        /* No signals placeholder */
+        .no-signals {
+            text-align: center;
+            padding: 32px 16px;
+            color: #444;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div>
+                <h1>BTC / USDT</h1>
+                <div class="price-display">
+                    <span class="current-price" id="currentPrice">--</span>
+                    <span class="price-change" id="priceChange">--</span>
+                </div>
+            </div>
+            <div class="ema-legend">
+                <div class="ema-item"><div class="ema-dot" style="background:#3b82f6"></div><span>EMA 21</span><span class="ema-value" id="ema21Val">--</span></div>
+                <div class="ema-item"><div class="ema-dot" style="background:#ef4444"></div><span>EMA 55</span><span class="ema-value" id="ema55Val">--</span></div>
+                <div class="ema-item"><div class="ema-dot" style="background:#22c55e"></div><span>EMA 200</span><span class="ema-value" id="ema200Val">--</span></div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="timeframe-buttons">
+                <button data-binance="1h">1H</button>
+                <button data-binance="4h">4H</button>
+                <button data-binance="1d" class="active">1D</button>
+                <button data-binance="1w">1W</button>
+            </div>
+            <div class="status-bar">
+                <div class="status-dot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-area">
+        <div id="chart-container"></div>
+        <div class="backtest-panel" id="backtestPanel">
+            <div class="panel-section">
+                <h3>Strategies</h3>
+                <div class="strategy-option active" data-strategy="ema21x55" onclick="toggleStrategy(this)">
+                    <div class="strategy-label">
+                        <span class="strategy-name">EMA 21 / 55 Cross</span>
+                        <span class="strategy-desc">Buy when 21 crosses above 55, sell when below</span>
+                    </div>
+                    <div class="toggle-switch on" id="toggle-ema21x55"></div>
+                </div>
+                <div class="strategy-option" data-strategy="ema21x200" onclick="toggleStrategy(this)">
+                    <div class="strategy-label">
+                        <span class="strategy-name">EMA 21 / 200 Cross</span>
+                        <span class="strategy-desc">Buy when 21 crosses above 200, sell when below</span>
+                    </div>
+                    <div class="toggle-switch" id="toggle-ema21x200"></div>
+                </div>
+                <div class="strategy-option" data-strategy="ema55x200" onclick="toggleStrategy(this)">
+                    <div class="strategy-label">
+                        <span class="strategy-name">EMA 55 / 200 Cross</span>
+                        <span class="strategy-desc">Golden/death cross — long-term trend</span>
+                    </div>
+                    <div class="toggle-switch" id="toggle-ema55x200"></div>
+                </div>
+                <div class="strategy-option" data-strategy="tripleEma" onclick="toggleStrategy(this)">
+                    <div class="strategy-label">
+                        <span class="strategy-name">Triple EMA Alignment</span>
+                        <span class="strategy-desc">Buy when 21 > 55 > 200, sell when 21 < 55 < 200</span>
+                    </div>
+                    <div class="toggle-switch" id="toggle-tripleEma"></div>
+                </div>
+            </div>
+            <div class="panel-section" id="statsSection">
+                <h3>Performance</h3>
+                <div class="no-signals" id="noSignals">Enable a strategy to see backtest results</div>
+                <div class="stats-grid" id="statsGrid" style="display:none;"></div>
+                <div id="equityContainer" style="display:none;">
+                    <div style="font-size:11px; color:#666; margin-top:16px; margin-bottom:4px;">EQUITY CURVE (starting $10,000)</div>
+                    <div class="equity-mini" id="equityChart"></div>
+                </div>
+            </div>
+            <div class="panel-section" id="tradeLogSection" style="display:none;">
+                <h3>Trade Log</h3>
+                <div class="trade-log" id="tradeLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Chart setup ──
+        const container = document.getElementById('chart-container');
+        const chart = LightweightCharts.createChart(container, {
+            layout: { background: { type: 'solid', color: '#0a0a0f' }, textColor: '#666' },
+            grid: { vertLines: { color: '#111122' }, horzLines: { color: '#111122' } },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { color: '#3b82f644', width: 1 },
+                horzLine: { color: '#3b82f644', width: 1 },
+            },
+            rightPriceScale: { borderColor: '#1a1a2e' },
+            timeScale: { borderColor: '#1a1a2e', timeVisible: true, secondsVisible: false, fixLeftEdge: true, fixRightEdge: true },
+        });
+
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#22c55e', downColor: '#ef4444',
+            borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+            wickUpColor: '#22c55e88', wickDownColor: '#ef444488',
+        });
+
+        const ema21Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        const ema55Series = chart.addLineSeries({ color: '#ef4444', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        const ema200Series = chart.addLineSeries({ color: '#22c55e', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+
+        // Marker series for buy/sell signals
+        let signalMarkers = [];
+
+        // ── EMA calculation ──
+        function calculateEMA(data, period) {
+            const k = 2 / (period + 1);
+            const emaData = [];
+            if (data.length === 0) return emaData;
+            let ema = data[0].close;
+            for (let i = 0; i < data.length; i++) {
+                ema = data[i].close * k + ema * (1 - k);
+                if (i >= period - 1) {
+                    emaData.push({ time: data[i].time, value: parseFloat(ema.toFixed(2)) });
+                }
+            }
+            return emaData;
+        }
+
+        // Build a map from time -> ema value for quick lookup
+        function emaMap(emaData) {
+            const m = new Map();
+            for (const d of emaData) m.set(d.time, d.value);
+            return m;
+        }
+
+        // ── State ──
+        let currentInterval = '1d';
+        let candleData = [];
+        let ws = null;
+        let equityChart = null;
+        let equityLineSeries = null;
+        const activeStrategies = new Set(['ema21x55']);
+
+        // ── Backtest Engine ──
+        function detectSignals(data, strategy) {
+            const ema21 = emaMap(calculateEMA(data, 21));
+            const ema55 = emaMap(calculateEMA(data, 55));
+            const ema200 = emaMap(calculateEMA(data, 200));
+            const signals = [];
+
+            let prevState = null; // 'long' or null
+
+            for (let i = 1; i < data.length; i++) {
+                const t = data[i].time;
+                const tPrev = data[i - 1].time;
+                let buySignal = false;
+                let sellSignal = false;
+
+                if (strategy === 'ema21x55') {
+                    const fast = ema21.get(t), slow = ema55.get(t);
+                    const fastPrev = ema21.get(tPrev), slowPrev = ema55.get(tPrev);
+                    if (fast == null || slow == null || fastPrev == null || slowPrev == null) continue;
+                    if (fastPrev <= slowPrev && fast > slow) buySignal = true;
+                    if (fastPrev >= slowPrev && fast < slow) sellSignal = true;
+                } else if (strategy === 'ema21x200') {
+                    const fast = ema21.get(t), slow = ema200.get(t);
+                    const fastPrev = ema21.get(tPrev), slowPrev = ema200.get(tPrev);
+                    if (fast == null || slow == null || fastPrev == null || slowPrev == null) continue;
+                    if (fastPrev <= slowPrev && fast > slow) buySignal = true;
+                    if (fastPrev >= slowPrev && fast < slow) sellSignal = true;
+                } else if (strategy === 'ema55x200') {
+                    const fast = ema55.get(t), slow = ema200.get(t);
+                    const fastPrev = ema55.get(tPrev), slowPrev = ema200.get(tPrev);
+                    if (fast == null || slow == null || fastPrev == null || slowPrev == null) continue;
+                    if (fastPrev <= slowPrev && fast > slow) buySignal = true;
+                    if (fastPrev >= slowPrev && fast < slow) sellSignal = true;
+                } else if (strategy === 'tripleEma') {
+                    const e21 = ema21.get(t), e55 = ema55.get(t), e200 = ema200.get(t);
+                    const e21p = ema21.get(tPrev), e55p = ema55.get(tPrev), e200p = ema200.get(tPrev);
+                    if (e21 == null || e55 == null || e200 == null || e21p == null || e55p == null || e200p == null) continue;
+                    const aligned = e21 > e55 && e55 > e200;
+                    const alignedPrev = e21p > e55p && e55p > e200p;
+                    const bearAligned = e21 < e55 && e55 < e200;
+                    const bearAlignedPrev = e21p < e55p && e55p < e200p;
+                    if (!alignedPrev && aligned) buySignal = true;
+                    if (!bearAlignedPrev && bearAligned) sellSignal = true;
+                }
+
+                if (buySignal && prevState !== 'long') {
+                    signals.push({ time: t, side: 'buy', price: data[i].close });
+                    prevState = 'long';
+                } else if (sellSignal && prevState === 'long') {
+                    signals.push({ time: t, side: 'sell', price: data[i].close });
+                    prevState = null;
+                }
+            }
+            return signals;
+        }
+
+        function runBacktest(data, signals) {
+            const startingCapital = 10000;
+            let capital = startingCapital;
+            let position = 0;
+            let entryPrice = 0;
+            const trades = [];
+            const equity = [{ time: data[0].time, value: startingCapital }];
+
+            let signalIdx = 0;
+            for (let i = 0; i < data.length; i++) {
+                const t = data[i].time;
+                while (signalIdx < signals.length && signals[signalIdx].time === t) {
+                    const sig = signals[signalIdx];
+                    if (sig.side === 'buy' && position === 0) {
+                        position = capital / sig.price;
+                        entryPrice = sig.price;
+                        capital = 0;
+                    } else if (sig.side === 'sell' && position > 0) {
+                        capital = position * sig.price;
+                        const pnl = ((sig.price - entryPrice) / entryPrice) * 100;
+                        trades.push({
+                            entryPrice,
+                            exitPrice: sig.price,
+                            entryTime: signals[signalIdx - 1]?.time || t,
+                            exitTime: t,
+                            pnl,
+                            profit: (sig.price - entryPrice) * position,
+                        });
+                        position = 0;
+                    }
+                    signalIdx++;
+                }
+                const currentEquity = position > 0 ? position * data[i].close : capital;
+                equity.push({ time: t, value: parseFloat(currentEquity.toFixed(2)) });
+            }
+
+            const finalEquity = position > 0 ? position * data[data.length - 1].close : capital;
+            const totalReturn = ((finalEquity - startingCapital) / startingCapital) * 100;
+            const wins = trades.filter(t => t.pnl > 0);
+            const losses = trades.filter(t => t.pnl <= 0);
+            const winRate = trades.length > 0 ? (wins.length / trades.length) * 100 : 0;
+            const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : 0;
+            const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length) : 0;
+            const profitFactor = avgLoss > 0 ? (avgWin * wins.length) / (avgLoss * losses.length) : avgWin > 0 ? Infinity : 0;
+
+            // Max drawdown
+            let peak = startingCapital;
+            let maxDD = 0;
+            for (const e of equity) {
+                if (e.value > peak) peak = e.value;
+                const dd = ((peak - e.value) / peak) * 100;
+                if (dd > maxDD) maxDD = dd;
+            }
+
+            // Buy & hold comparison
+            const buyHoldReturn = ((data[data.length - 1].close - data[0].close) / data[0].close) * 100;
+
+            return {
+                totalReturn,
+                finalEquity,
+                trades,
+                winRate,
+                totalTrades: trades.length,
+                avgWin,
+                avgLoss,
+                profitFactor,
+                maxDrawdown: maxDD,
+                buyHoldReturn,
+                equity,
+                isInPosition: position > 0,
+            };
+        }
+
+        // ── Render backtest results ──
+        function renderBacktest() {
+            if (activeStrategies.size === 0) {
+                document.getElementById('noSignals').style.display = 'block';
+                document.getElementById('statsGrid').style.display = 'none';
+                document.getElementById('equityContainer').style.display = 'none';
+                document.getElementById('tradeLogSection').style.display = 'none';
+                candleSeries.setMarkers([]);
+                return;
+            }
+
+            // Merge signals from all active strategies
+            let allSignals = [];
+            for (const strat of activeStrategies) {
+                const sigs = detectSignals(candleData, strat);
+                allSignals.push(...sigs);
+            }
+            // Sort by time, deduplicate (same time + side)
+            allSignals.sort((a, b) => a.time - b.time || (a.side === 'buy' ? -1 : 1));
+            const seen = new Set();
+            allSignals = allSignals.filter(s => {
+                const key = `${s.time}-${s.side}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            // For combined backtest, re-run with merged signals that respect position state
+            const mergedSignals = [];
+            let inPos = false;
+            for (const s of allSignals) {
+                if (s.side === 'buy' && !inPos) { mergedSignals.push(s); inPos = true; }
+                else if (s.side === 'sell' && inPos) { mergedSignals.push(s); inPos = false; }
+            }
+
+            const result = runBacktest(candleData, mergedSignals);
+
+            // Chart markers
+            const markers = mergedSignals.map(s => ({
+                time: s.time,
+                position: s.side === 'buy' ? 'belowBar' : 'aboveBar',
+                color: s.side === 'buy' ? '#22c55e' : '#ef4444',
+                shape: s.side === 'buy' ? 'arrowUp' : 'arrowDown',
+                text: s.side === 'buy' ? 'BUY' : 'SELL',
+            }));
+            candleSeries.setMarkers(markers);
+
+            // Stats
+            const grid = document.getElementById('statsGrid');
+            const fmt = (v, dec = 2) => v.toFixed(dec);
+            const fmtMoney = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            grid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Return</div>
+                    <div class="stat-value ${result.totalReturn >= 0 ? 'positive' : 'negative'}">${result.totalReturn >= 0 ? '+' : ''}${fmt(result.totalReturn)}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Final Equity</div>
+                    <div class="stat-value ${result.totalReturn >= 0 ? 'positive' : 'negative'}">${fmtMoney(result.finalEquity)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Win Rate</div>
+                    <div class="stat-value ${result.winRate >= 50 ? 'positive' : 'negative'}">${fmt(result.winRate, 1)}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Trades</div>
+                    <div class="stat-value neutral">${result.totalTrades}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Win</div>
+                    <div class="stat-value positive">+${fmt(result.avgWin)}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Loss</div>
+                    <div class="stat-value negative">-${fmt(result.avgLoss)}%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Profit Factor</div>
+                    <div class="stat-value ${result.profitFactor >= 1 ? 'positive' : 'negative'}">${result.profitFactor === Infinity ? '∞' : fmt(result.profitFactor)}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Max Drawdown</div>
+                    <div class="stat-value negative">-${fmt(result.maxDrawdown)}%</div>
+                </div>
+                <div class="stat-card full-width" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div class="stat-label">Buy & Hold Return</div>
+                        <div class="stat-value ${result.buyHoldReturn >= 0 ? 'positive' : 'negative'}">${result.buyHoldReturn >= 0 ? '+' : ''}${fmt(result.buyHoldReturn)}%</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="stat-label">Strategy vs B&H</div>
+                        <div class="stat-value ${result.totalReturn > result.buyHoldReturn ? 'positive' : 'negative'}">
+                            ${result.totalReturn > result.buyHoldReturn ? 'Outperforms' : 'Underperforms'}
+                        </div>
+                    </div>
+                </div>
+                ${result.isInPosition ? '<div class="stat-card full-width"><div class="stat-label">Status</div><div class="stat-value positive">Currently in position (open trade)</div></div>' : ''}
+            `;
+            document.getElementById('noSignals').style.display = 'none';
+            grid.style.display = 'grid';
+
+            // Equity curve
+            const eqContainer = document.getElementById('equityContainer');
+            eqContainer.style.display = 'block';
+            const eqDiv = document.getElementById('equityChart');
+            eqDiv.innerHTML = '';
+
+            if (equityChart) { equityChart.remove(); equityChart = null; }
+            equityChart = LightweightCharts.createChart(eqDiv, {
+                layout: { background: { type: 'solid', color: '#111120' }, textColor: '#555' },
+                grid: { vertLines: { visible: false }, horzLines: { color: '#1a1a2e' } },
+                rightPriceScale: { borderVisible: false },
+                timeScale: { borderVisible: false, visible: false },
+                crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
+                handleScroll: false,
+                handleScale: false,
+            });
+            equityLineSeries = equityChart.addAreaSeries({
+                topColor: result.totalReturn >= 0 ? '#22c55e33' : '#ef444433',
+                bottomColor: '#0a0a0f00',
+                lineColor: result.totalReturn >= 0 ? '#22c55e' : '#ef4444',
+                lineWidth: 2,
+                priceLineVisible: false,
+                lastValueVisible: false,
+            });
+            equityLineSeries.setData(result.equity);
+            equityChart.timeScale().fitContent();
+
+            // Trade log
+            const logSection = document.getElementById('tradeLogSection');
+            const logDiv = document.getElementById('tradeLog');
+            if (result.trades.length > 0) {
+                logSection.style.display = 'block';
+                const recentTrades = result.trades.slice(-50).reverse();
+                logDiv.innerHTML = recentTrades.map(t => {
+                    const date = new Date(t.exitTime * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+                    return `<div class="trade-row">
+                        <div>
+                            <span class="trade-side sell">SELL</span>
+                            <span style="color:#888; margin-left:6px;">${date}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="trade-pnl ${t.pnl >= 0 ? 'positive' : 'negative'}" style="color:${t.pnl >= 0 ? '#22c55e' : '#ef4444'}">${t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(1)}%</div>
+                            <div style="font-size:11px; color:#555;">$${t.entryPrice.toFixed(0)} → $${t.exitPrice.toFixed(0)}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                logSection.style.display = 'none';
+            }
+        }
+
+        // ── Panel toggle ──
+        // Panel is always visible — no toggle needed
+
+        function toggleStrategy(el) {
+            const strategy = el.dataset.strategy;
+            const toggle = el.querySelector('.toggle-switch');
+            if (activeStrategies.has(strategy)) {
+                activeStrategies.delete(strategy);
+                toggle.classList.remove('on');
+                el.classList.remove('active');
+            } else {
+                activeStrategies.add(strategy);
+                toggle.classList.add('on');
+                el.classList.add('active');
+            }
+            if (candleData.length > 0) renderBacktest();
+        }
+
+        // ── Data fetching ──
+        async function fetchAllBinanceCandles(interval) {
+            const allCandles = [];
+            let startTime = new Date('2017-08-01').getTime();
+            const now = Date.now();
+            document.getElementById('statusText').textContent = 'Loading Binance data...';
+            while (startTime < now) {
+                const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&startTime=${startTime}&limit=1000`;
+                const res = await fetch(url);
+                const raw = await res.json();
+                if (!raw.length) break;
+                for (const k of raw) {
+                    allCandles.push({
+                        time: Math.floor(k[0] / 1000),
+                        open: parseFloat(k[1]), high: parseFloat(k[2]),
+                        low: parseFloat(k[3]), close: parseFloat(k[4]),
+                    });
+                }
+                startTime = raw[raw.length - 1][0] + 1;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return allCandles;
+        }
+
+        async function fetchCoinGeckoHistory() {
+            document.getElementById('statusText').textContent = 'Loading pre-2017 history...';
+            const from = Math.floor(new Date('2013-04-28').getTime() / 1000);
+            const to = Math.floor(new Date('2017-08-01').getTime() / 1000);
+            const url = `https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=usd&from=${from}&to=${to}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!data.prices) return [];
+            const dayMap = new Map();
+            for (const [ts, price] of data.prices) {
+                const dayKey = Math.floor(ts / 86400000) * 86400;
+                if (!dayMap.has(dayKey)) {
+                    dayMap.set(dayKey, { time: dayKey, open: price, high: price, low: price, close: price });
+                } else {
+                    const c = dayMap.get(dayKey);
+                    c.high = Math.max(c.high, price);
+                    c.low = Math.min(c.low, price);
+                    c.close = price;
+                }
+            }
+            return Array.from(dayMap.values()).sort((a, b) => a.time - b.time);
+        }
+
+        async function fetchCandles(interval) {
+            if (interval === '1d' || interval === '1w') {
+                let historicalCandles = [];
+                try { historicalCandles = await fetchCoinGeckoHistory(); } catch (e) { console.warn('CoinGecko failed:', e); }
+                const binanceCandles = await fetchAllBinanceCandles(interval);
+                if (interval === '1d' && historicalCandles.length > 0) {
+                    const binanceStart = binanceCandles.length > 0 ? binanceCandles[0].time : Infinity;
+                    const pre = historicalCandles.filter(c => c.time < binanceStart);
+                    return [...pre, ...binanceCandles];
+                }
+                return binanceCandles;
+            }
+            const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=1000`;
+            const res = await fetch(url);
+            const raw = await res.json();
+            return raw.map(k => ({
+                time: Math.floor(k[0] / 1000),
+                open: parseFloat(k[1]), high: parseFloat(k[2]),
+                low: parseFloat(k[3]), close: parseFloat(k[4]),
+            }));
+        }
+
+        function updateChart(data) {
+            candleData = data;
+            candleSeries.setData(data);
+            ema21Series.setData(calculateEMA(data, 21));
+            ema55Series.setData(calculateEMA(data, 55));
+            ema200Series.setData(calculateEMA(data, 200));
+            updateHeader(data[data.length - 1]);
+            chart.timeScale().fitContent();
+            renderBacktest();
+        }
+
+        function updateHeader(candle) {
+            if (!candle) return;
+            document.getElementById('currentPrice').textContent = `$${candle.close.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const change = ((candle.close - candle.open) / candle.open) * 100;
+            const changeEl = document.getElementById('priceChange');
+            changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+            changeEl.className = `price-change ${change >= 0 ? 'up' : 'down'}`;
+            const ema21Data = calculateEMA(candleData, 21);
+            const ema55Data = calculateEMA(candleData, 55);
+            const ema200Data = calculateEMA(candleData, 200);
+            const fmt = v => `$${v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            if (ema21Data.length) document.getElementById('ema21Val').textContent = fmt(ema21Data[ema21Data.length - 1].value);
+            if (ema55Data.length) document.getElementById('ema55Val').textContent = fmt(ema55Data[ema55Data.length - 1].value);
+            if (ema200Data.length) document.getElementById('ema200Val').textContent = fmt(ema200Data[ema200Data.length - 1].value);
+        }
+
+        // ── WebSocket ──
+        function connectWebSocket(interval) {
+            if (ws) ws.close();
+            ws = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
+            ws.onopen = () => {
+                document.getElementById('statusText').textContent = 'Live';
+                document.querySelector('.status-dot').style.background = '#22c55e';
+            };
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                const k = msg.k;
+                const candle = {
+                    time: Math.floor(k.t / 1000),
+                    open: parseFloat(k.o), high: parseFloat(k.h),
+                    low: parseFloat(k.l), close: parseFloat(k.c),
+                };
+                if (candleData.length > 0 && candleData[candleData.length - 1].time === candle.time) {
+                    candleData[candleData.length - 1] = candle;
+                } else {
+                    candleData.push(candle);
+                }
+                candleSeries.update(candle);
+                const updateLastEMA = (series, period) => {
+                    const emaAll = calculateEMA(candleData, period);
+                    if (emaAll.length > 0) series.update(emaAll[emaAll.length - 1]);
+                };
+                updateLastEMA(ema21Series, 21);
+                updateLastEMA(ema55Series, 55);
+                updateLastEMA(ema200Series, 200);
+                updateHeader(candle);
+            };
+            ws.onclose = () => {
+                document.getElementById('statusText').textContent = 'Reconnecting...';
+                setTimeout(() => connectWebSocket(interval), 3000);
+            };
+            ws.onerror = () => ws.close();
+        }
+
+        // ── Timeframe buttons ──
+        document.querySelectorAll('.timeframe-buttons button').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                document.querySelectorAll('.timeframe-buttons button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const interval = btn.dataset.binance;
+                currentInterval = interval;
+                document.getElementById('statusText').textContent = 'Loading...';
+                document.querySelector('.status-dot').style.background = '#f59e0b';
+                const data = await fetchCandles(interval);
+                updateChart(data);
+                connectWebSocket(interval);
+            });
+        });
+
+        // ── Resize ──
+        function resizeChart() {
+            chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+        }
+        window.addEventListener('resize', resizeChart);
+        // Initial resize after layout settles
+        setTimeout(resizeChart, 100);
+
+        // ── Init ──
+        (async () => {
+            const data = await fetchCandles('1d');
+            updateChart(data);
+            connectWebSocket('1d');
+        })();
+    </script>
+</body>
+</html>
