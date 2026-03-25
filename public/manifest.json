@@ -1,0 +1,26 @@
+{
+  "name": "Investment Command Centre",
+  "short_name": "Command",
+  "description": "Multi-asset investment analytics dashboard",
+  "theme_color": "#05070A",
+  "background_color": "#05070A",
+  "display": "standalone",
+  "orientation": "any",
+  "scope": "/",
+  "start_url": "/",
+  "categories": ["finance"],
+  "icons": [
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -49,10 +49,192 @@
     "description": "Consumer Price Index"
   },
   {
+    "date": "2026-05-29",
+    "event": "PCE Inflation",
+    "period": "Apr 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-06-05",
+    "event": "NFP",
+    "period": "May 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-06-11",
+    "event": "CPI",
+    "period": "May 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
     "date": "2026-06-17",
     "event": "FOMC",
     "period": "Jun 2026",
     "category": "fomc",
     "description": "Federal Open Market Committee Rate Decision"
+  },
+  {
+    "date": "2026-06-26",
+    "event": "PCE Inflation",
+    "period": "May 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-07-02",
+    "event": "NFP",
+    "period": "Jun 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-07-15",
+    "event": "CPI",
+    "period": "Jun 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-07-29",
+    "event": "FOMC",
+    "period": "Jul 2026",
+    "category": "fomc",
+    "description": "Federal Open Market Committee Rate Decision"
+  },
+  {
+    "date": "2026-07-31",
+    "event": "PCE Inflation",
+    "period": "Jun 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-08-07",
+    "event": "NFP",
+    "period": "Jul 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-08-12",
+    "event": "CPI",
+    "period": "Jul 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-08-28",
+    "event": "PCE Inflation",
+    "period": "Jul 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-09-04",
+    "event": "NFP",
+    "period": "Aug 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-09-10",
+    "event": "CPI",
+    "period": "Aug 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-09-16",
+    "event": "FOMC",
+    "period": "Sep 2026",
+    "category": "fomc",
+    "description": "Federal Open Market Committee Rate Decision"
+  },
+  {
+    "date": "2026-09-25",
+    "event": "PCE Inflation",
+    "period": "Aug 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-10-02",
+    "event": "NFP",
+    "period": "Sep 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-10-14",
+    "event": "CPI",
+    "period": "Sep 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-10-28",
+    "event": "FOMC",
+    "period": "Oct 2026",
+    "category": "fomc",
+    "description": "Federal Open Market Committee Rate Decision"
+  },
+  {
+    "date": "2026-10-30",
+    "event": "PCE Inflation",
+    "period": "Sep 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-11-06",
+    "event": "NFP",
+    "period": "Oct 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-11-12",
+    "event": "CPI",
+    "period": "Oct 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-11-25",
+    "event": "PCE Inflation",
+    "period": "Oct 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
+  },
+  {
+    "date": "2026-12-04",
+    "event": "NFP",
+    "period": "Nov 2026",
+    "category": "employment",
+    "description": "Non-Farm Payrolls"
+  },
+  {
+    "date": "2026-12-09",
+    "event": "FOMC",
+    "period": "Dec 2026",
+    "category": "fomc",
+    "description": "Federal Open Market Committee Rate Decision"
+  },
+  {
+    "date": "2026-12-10",
+    "event": "CPI",
+    "period": "Nov 2026",
+    "category": "inflation",
+    "description": "Consumer Price Index"
+  },
+  {
+    "date": "2026-12-23",
+    "event": "PCE Inflation",
+    "period": "Nov 2026",
+    "category": "inflation",
+    "description": "Personal Consumption Expenditures Price Index"
   }
 ]

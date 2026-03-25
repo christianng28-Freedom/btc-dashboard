@@ -193,6 +193,20 @@ const navGroups: NavGroup[] = [
           </svg>
         ),
       },
+      {
+        href: '/bitcoin/regulation',
+        label: 'Regulation',
+        icon: (
+          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+            />
+          </svg>
+        ),
+      },
     ],
   },
 ]
@@ -201,7 +215,7 @@ export function NavSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-16 lg:w-60 flex-shrink-0 flex flex-col py-2 px-2">
+    <aside className="w-14 sm:w-16 lg:w-60 flex-shrink-0 flex flex-col py-1 px-1 sm:py-2 sm:px-2">
       {/* Floating glass panel */}
       <div className="flex flex-col h-full rounded-xl border border-white/[0.07] overflow-hidden"
         style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(30px)' }}>

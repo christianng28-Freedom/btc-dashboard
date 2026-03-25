@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c1a2e"/>
+      <stop offset="100%" stop-color="#0a0a14"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFD166"/>
+      <stop offset="100%" stop-color="#C96A00"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#FFE08A"/>
+      <stop offset="60%" stop-color="#F7931A"/>
+      <stop offset="100%" stop-color="#D4680A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark rounded background -->
+  <rect width="32" height="32" rx="7.5" fill="url(#bg)"/>
+
+  <!-- Thin gold ring border -->
+  <rect width="32" height="32" rx="7.5" fill="none" stroke="url(#ring)" stroke-width="0.8" opacity="0.55"/>
+
+  <!-- Bitcoin ₿ mark — stem + two bumps + two tick lines -->
+  <g fill="url(#mark)">
+    <!-- Vertical stem -->
+    <rect x="11.5" y="7.5" width="2.8" height="17" rx="1.2"/>
+
+    <!-- Top serif -->
+    <rect x="10" y="7.5" width="5.5" height="2" rx="0.6"/>
+    <!-- Bottom serif -->
+    <rect x="10" y="22.5" width="5.5" height="2" rx="0.6"/>
+
+    <!-- Upper bump (D shape right of stem) -->
+    <path d="M14.3 9.5 h2.2 a3.8 3.8 0 0 1 0 7.0 h-2.2 z"/>
+
+    <!-- Lower bump (slightly wider) -->
+    <path d="M14.3 16.0 h2.8 a4.2 4.2 0 0 1 0 8.5 h-2.8 z"/>
+
+    <!-- Two horizontal tick strokes through stem (₿ style) -->
+    <rect x="9.5" y="11.5" width="4.5" height="1.4" rx="0.5"/>
+    <rect x="9.5" y="19.0" width="4.5" height="1.4" rx="0.5"/>
+  </g>
+</svg>

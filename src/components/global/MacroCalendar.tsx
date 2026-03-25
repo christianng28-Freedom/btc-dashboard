@@ -1,6 +1,6 @@
 'use client'
 
-import calendarData from '@/data/macro-calendar.json'
+import { useQuery } from '@tanstack/react-query'
 
 interface CalendarEvent {
   date: string
@@ -8,6 +8,13 @@ interface CalendarEvent {
   period: string
   category: string
   description: string
+  source?: string
+}
+
+interface CalendarResponse {
+  events: CalendarEvent[]
+  source: 'finnhub' | 'static'
+  refreshedAt: string | null
 }
 
 const CATEGORY_COLORS: Record<string, { color: string; bg: string }> = {
@@ -35,15 +42,40 @@ interface Props {
 }
 
 export function MacroCalendar({ maxItems = 6, className = '' }: Props) {
-  const events = (calendarData as CalendarEvent[])
-    .filter((e) => daysUntil(e.date) >= 0)
-    .slice(0, maxItems)
+  const { data, isLoading } = useQuery<CalendarResponse>({
+    queryKey: ['macro-calendar'],
+    queryFn: () => fetch('/api/calendar').then((r) => r.json()),
+    staleTime: 1000 * 60 * 60 * 24 * 7, // treat as fresh for 7 days
+    gcTime:    1000 * 60 * 60 * 24 * 7,
+  })
+
+  const events = (data?.events ?? []).slice(0, maxItems)
 
   return (
     <div className={className}>
-      <div className="text-[9px] font-mono text-[#555566] uppercase tracking-wider mb-3">
-        Macro Calendar
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[9px] font-mono text-[#555566] uppercase tracking-wider">
+          Macro Calendar
+        </div>
+        {data && (
+          <div className="text-[8px] font-mono text-[#333344]">
+            {data.source === 'finnhub' ? 'Finnhub · weekly' : 'static · 2026'}
+          </div>
+        )}
       </div>
+
+      {isLoading && (
+        <div className="space-y-1.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-10 rounded-lg bg-[#111120] animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && events.length === 0 && (
+        <div className="text-[10px] font-mono text-[#444455] py-3">No upcoming events</div>
+      )}
+
       <div className="space-y-1.5">
         {events.map((e) => {
           const days = daysUntil(e.date)
@@ -65,7 +97,7 @@ export function MacroCalendar({ maxItems = 6, className = '' }: Props) {
                   className="text-[9px] font-mono"
                   style={{ color: isToday ? '#f59e0b' : isThisWeek ? '#60a5fa' : '#555566' }}
                 >
-                  {isToday ? 'Today' : isThisWeek ? `${days}d` : `${days}d`}
+                  {isToday ? 'Today' : `${days}d`}
                 </div>
               </div>
 

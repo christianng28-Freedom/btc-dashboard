@@ -459,17 +459,17 @@
 ## Phase 3: Enhanced Bitcoin + Platform (FUTURE)
 
 ### Regulation & Adoption
-- [ ] Regulation Tracker — vertical timeline with sentiment badges, region filter
-- [ ] Nation-State Adoption Map — SVG world map, colour-coded tiers, click popovers
-- [ ] Curated JSON data files (`regulation-events.json`, etc.)
+- [x] Regulation Tracker — vertical timeline with sentiment badges, region filter
+- [x] Nation-State Adoption Map — SVG world map, colour-coded tiers, click popovers
+- [x] Curated JSON data files (`regulation-events.json`, etc.)
 
 ### ETF & Institutional
 - [ ] ETF Flows Dashboard — daily net inflows/outflows for spot Bitcoin ETFs
 - [ ] Corporate Treasury Tracker — table of public companies holding BTC
 
 ### News & Events
-- [ ] News feed (CryptoPanic API)
-- [ ] Events calendar (FOMC dates, CPI releases, ETF deadlines, halving)
+- [x] News feed (CryptoPanic API)
+- [x] Events calendar (FOMC dates, CPI releases, ETF deadlines, halving)
 
 ### Platform Features
 - [ ] User accounts — save preferences, custom alerts, watchlists

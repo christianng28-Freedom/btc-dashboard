@@ -6,6 +6,7 @@ import { MetricHeatmapStrip, MetricItem } from '@/components/widgets/MetricHeatm
 import { KeyMarketsSnapshot } from '@/components/global/KeyMarketsSnapshot'
 import { RiskRegimeBadge } from '@/components/global/RiskRegimeBadge'
 import { MacroCalendar } from '@/components/global/MacroCalendar'
+import { MorningBriefing } from '@/components/global/MorningBriefing'
 
 // ── Skeleton helpers ──────────────────────────────────────────────────────────
 
@@ -134,6 +135,9 @@ export default function GlobalOverview() {
         )}
       </div>
 
+      {/* Morning Briefing */}
+      <MorningBriefing />
+
       {/* Macro Metric Heatmap Strip */}
       <section>
         <SectionLabel>Macro Snapshot</SectionLabel>
@@ -175,6 +179,7 @@ export default function GlobalOverview() {
           </div>
         </div>
       </section>
+
     </div>
   )
 }

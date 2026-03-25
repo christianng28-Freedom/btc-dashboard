@@ -1,0 +1,342 @@
+[
+  {
+    "name": "El Salvador",
+    "alpha2": "SV",
+    "numericCode": "222",
+    "tier": "legal-tender",
+    "tierLabel": "Legal Tender",
+    "since": "2021-09-07",
+    "details": "First country to adopt Bitcoin as legal tender via the Bitcoin Law. The government distributes BTC via the Chivo wallet and holds a national Bitcoin reserve exceeding 5,700 BTC.",
+    "flag": "🇸🇻"
+  },
+  {
+    "name": "Central African Republic",
+    "alpha2": "CF",
+    "numericCode": "140",
+    "tier": "legal-tender",
+    "tierLabel": "Legal Tender",
+    "since": "2022-04-27",
+    "details": "Second country to adopt Bitcoin as legal tender. Practical adoption remains limited by low internet connectivity (~11% penetration), but the law marks a significant symbolic step for financial sovereignty in a dollarised economy.",
+    "flag": "🇨🇫"
+  },
+  {
+    "name": "United States",
+    "alpha2": "US",
+    "numericCode": "840",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2025-01-23",
+    "details": "Under Trump's 2025 executive orders, the US established a Strategic Bitcoin Reserve and created a Presidential Working Group on Digital Assets. Spot Bitcoin and Ether ETFs are approved. SEC under new leadership is moving toward clear regulatory frameworks.",
+    "flag": "🇺🇸"
+  },
+  {
+    "name": "Germany",
+    "alpha2": "DE",
+    "numericCode": "276",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2022-05-11",
+    "details": "Germany offers the most favourable tax treatment among G7 nations — Bitcoin held for more than one year is fully exempt from capital gains tax. BaFin licenses crypto custodians and exchanges under a robust framework.",
+    "flag": "🇩🇪"
+  },
+  {
+    "name": "Switzerland",
+    "alpha2": "CH",
+    "numericCode": "756",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2024-01-01",
+    "details": "Home to 'Crypto Valley' in Zug, Switzerland has licensed crypto banks (SEBA, Sygnum), tokenised securities frameworks under the DLT Act, and one of the most developed institutional crypto ecosystems globally.",
+    "flag": "🇨🇭"
+  },
+  {
+    "name": "United Arab Emirates",
+    "alpha2": "AE",
+    "numericCode": "784",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2024-01-01",
+    "details": "Zero capital gains tax on crypto. VARA (Dubai) and ADGM (Abu Dhabi) provide dual licensing regimes. Major exchanges including Binance, OKX, and Bybit hold UAE licences. The UAE is the fastest-growing global crypto hub.",
+    "flag": "🇦🇪"
+  },
+  {
+    "name": "Japan",
+    "alpha2": "JP",
+    "numericCode": "392",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2017-04-01",
+    "details": "Bitcoin recognised as legal property since 2017. FSA-licensed exchanges must comply with strict AML/KYC and custody requirements. Japan lowered the corporate tax rate on unrealised crypto gains in 2024, encouraging institutional adoption.",
+    "flag": "🇯🇵"
+  },
+  {
+    "name": "Singapore",
+    "alpha2": "SG",
+    "numericCode": "702",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2023-08-15",
+    "details": "MAS licenses digital payment token service providers under the Payment Services Act. Singapore has no capital gains tax. It is home to several major crypto firms and funds, with a stablecoin framework enacted in 2023.",
+    "flag": "🇸🇬"
+  },
+  {
+    "name": "Canada",
+    "alpha2": "CA",
+    "numericCode": "124",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2021-02-18",
+    "details": "Launched the world's first spot Bitcoin ETF (Purpose BTCC) in February 2021. Crypto exchanges must register with FINTRAC and provincial securities regulators. Canada is home to several major Bitcoin mining companies.",
+    "flag": "🇨🇦"
+  },
+  {
+    "name": "Australia",
+    "alpha2": "AU",
+    "numericCode": "036",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2024-05-01",
+    "details": "ASIC requires AFS licences for exchanges holding customer assets. The government is progressing a comprehensive Digital Assets bill. Australia has no specific crypto taxes beyond standard capital gains treatment.",
+    "flag": "🇦🇺"
+  },
+  {
+    "name": "Brazil",
+    "alpha2": "BR",
+    "numericCode": "076",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2023-03-01",
+    "details": "Brazil's Virtual Asset Service Provider Act established formal licensing and oversight under the Central Bank. Brazil is Latin America's largest crypto market by volume and hosts major exchange operations.",
+    "flag": "🇧🇷"
+  },
+  {
+    "name": "United Kingdom",
+    "alpha2": "GB",
+    "numericCode": "826",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2023-01-01",
+    "details": "FCA registration required for crypto firms operating in the UK. The Financial Services and Markets Act 2023 expanded the regulatory perimeter to cover crypto. HMRC treats Bitcoin as a capital asset with standard CGT rates.",
+    "flag": "🇬🇧"
+  },
+  {
+    "name": "France",
+    "alpha2": "FR",
+    "numericCode": "250",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "France operates PSAN (Digital Asset Service Provider) licensing under the AMF. MiCA compliance is advancing. France has been active in issuing CBDC pilots via the Banque de France.",
+    "flag": "🇫🇷"
+  },
+  {
+    "name": "South Korea",
+    "alpha2": "KR",
+    "numericCode": "410",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "South Korea implemented the Virtual Asset User Protection Act in 2024, requiring exchanges to hold user funds in segregated accounts at licensed banks. A 20% capital gains tax on crypto profits over KRW 2.5m is planned for 2025.",
+    "flag": "🇰🇷"
+  },
+  {
+    "name": "Argentina",
+    "alpha2": "AR",
+    "numericCode": "032",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "Bitcoin is legal but not legal tender. High inflation has driven significant grassroots adoption. President Milei's libertarian government has expressed pro-crypto sympathies. No formal licensing regime yet.",
+    "flag": "🇦🇷"
+  },
+  {
+    "name": "Mexico",
+    "alpha2": "MX",
+    "numericCode": "484",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "Fintech Law (2018) created a framework for crypto but the central bank has not authorised regulated entities to use crypto. Crypto is legal to buy and sell but not accepted as payment by most institutions.",
+    "flag": "🇲🇽"
+  },
+  {
+    "name": "South Africa",
+    "alpha2": "ZA",
+    "numericCode": "710",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "FSCA began licensing crypto asset service providers in 2023. South Africa has Africa's most mature crypto market by on-ramp infrastructure. Tax authority SARS treats crypto as an asset class subject to capital gains or income tax.",
+    "flag": "🇿🇦"
+  },
+  {
+    "name": "Netherlands",
+    "alpha2": "NL",
+    "numericCode": "528",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "DNB-registered crypto services providers can operate under MiCA. The Netherlands has an active DeFi and institutional crypto ecosystem. Capital gains are taxed as deemed return on wealth (Box 3).",
+    "flag": "🇳🇱"
+  },
+  {
+    "name": "India",
+    "alpha2": "IN",
+    "numericCode": "356",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": "2022-04-01",
+    "details": "India imposes a 30% flat tax on crypto gains with no loss offset allowed, and a 1% TDS on all transfers — among the most punitive tax structures globally. The RBI has repeatedly called for a crypto ban, though trading on exchanges remains legal.",
+    "flag": "🇮🇳"
+  },
+  {
+    "name": "Russia",
+    "alpha2": "RU",
+    "numericCode": "643",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": null,
+    "details": "Crypto cannot be used as a means of payment domestically. Mining is legal and Russia hosts significant hash rate, particularly after China's ban. The government legalised crypto for international trade settlements in 2024 amid sanctions.",
+    "flag": "🇷🇺"
+  },
+  {
+    "name": "Turkey",
+    "alpha2": "TR",
+    "numericCode": "792",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": "2021-04-16",
+    "details": "Turkey banned crypto as a payment method in 2021. However, trading on exchanges is permitted. Turkey has high grassroots adoption driven by lira inflation. The MASAK AML framework requires registration for crypto businesses.",
+    "flag": "🇹🇷"
+  },
+  {
+    "name": "Indonesia",
+    "alpha2": "ID",
+    "numericCode": "360",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": null,
+    "details": "Crypto is classified as a commodity, not currency, and may not be used as payment. Trading is permitted on Bappebti-licensed exchanges. Indonesia is one of Southeast Asia's largest crypto markets by user count.",
+    "flag": "🇮🇩"
+  },
+  {
+    "name": "Nigeria",
+    "alpha2": "NG",
+    "numericCode": "566",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": null,
+    "details": "Nigeria has had an on-again, off-again relationship with crypto. The CBN lifted its 2021 banking ban on crypto in 2023. However, the government arrested Binance executives in 2024 over currency manipulation concerns. Nigeria has the highest P2P Bitcoin volume in Africa.",
+    "flag": "🇳🇬"
+  },
+  {
+    "name": "China",
+    "alpha2": "CN",
+    "numericCode": "156",
+    "tier": "banned",
+    "tierLabel": "Banned",
+    "since": "2021-09-24",
+    "details": "China declared all crypto transactions illegal in September 2021. Mining was banned earlier in June 2021. Foreign crypto exchanges are blocked. The digital yuan (e-CNY) CBDC is being actively promoted as the government-backed alternative.",
+    "flag": "🇨🇳"
+  },
+  {
+    "name": "Bangladesh",
+    "alpha2": "BD",
+    "numericCode": "050",
+    "tier": "banned",
+    "tierLabel": "Banned",
+    "since": null,
+    "details": "Bangladesh Bank explicitly prohibited crypto transactions under the Money Laundering Prevention Act. Violations can result in criminal penalties. Bangladesh maintains one of the strictest crypto bans in Asia.",
+    "flag": "🇧🇩"
+  },
+  {
+    "name": "Algeria",
+    "alpha2": "DZ",
+    "numericCode": "012",
+    "tier": "banned",
+    "tierLabel": "Banned",
+    "since": null,
+    "details": "Algeria's Finance Act (2018) prohibits buying, selling, using, or holding virtual currencies. The ban is comprehensive and enforced under criminal law.",
+    "flag": "🇩🇿"
+  },
+  {
+    "name": "Morocco",
+    "alpha2": "MA",
+    "numericCode": "504",
+    "tier": "banned",
+    "tierLabel": "Banned",
+    "since": null,
+    "details": "Morocco's Office des Changes explicitly banned crypto in 2017. All crypto transactions are subject to penalties under foreign exchange regulations. Enforcement is active, with several prosecutions reported.",
+    "flag": "🇲🇦"
+  },
+  {
+    "name": "Bolivia",
+    "alpha2": "BO",
+    "numericCode": "068",
+    "tier": "banned",
+    "tierLabel": "Banned",
+    "since": null,
+    "details": "Bolivia's BCB banned crypto in 2014, making it one of the earliest crypto bans globally. The ban prohibits using any currency not issued or authorised by a state or central bank.",
+    "flag": "🇧🇴"
+  },
+  {
+    "name": "Ecuador",
+    "alpha2": "EC",
+    "numericCode": "218",
+    "tier": "banned",
+    "tierLabel": "Banned",
+    "since": null,
+    "details": "Ecuador's Monetary and Financial Code prohibits the use of money that is not issued and controlled by the government. The country uses the US dollar as its official currency and banned Bitcoin alongside the launch of its own digital currency (Dinero Electrónico).",
+    "flag": "🇪🇨"
+  },
+  {
+    "name": "Portugal",
+    "alpha2": "PT",
+    "numericCode": "620",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": null,
+    "details": "Portugal was a European crypto tax haven until 2023 — long-term crypto gains were tax-free. A 28% tax on gains held under one year was introduced in 2023. Portugal remains a popular destination for crypto nomads and businesses.",
+    "flag": "🇵🇹"
+  },
+  {
+    "name": "Norway",
+    "alpha2": "NO",
+    "numericCode": "578",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "Norway allows crypto trading under Finanstilsynet oversight. Crypto is taxed as capital income at 22%. Norway hosts a significant portion of European Bitcoin mining due to its hydropower resources.",
+    "flag": "🇳🇴"
+  },
+  {
+    "name": "Kazakhstan",
+    "alpha2": "KZ",
+    "numericCode": "398",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "Kazakhstan became a major global mining hub following China's 2021 ban. The AIFC (Astana International Financial Centre) has a progressive crypto licensing regime. Mining is taxed and the government has moved to regulate energy usage for miners.",
+    "flag": "🇰🇿"
+  },
+  {
+    "name": "Pakistan",
+    "alpha2": "PK",
+    "numericCode": "586",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": null,
+    "details": "Pakistan's SBP has instructed banks not to support crypto transactions. Despite informal bans, P2P trading remains active. Pakistan ranked highly in Chainalysis global crypto adoption indexes due to grassroots usage.",
+    "flag": "🇵🇰"
+  },
+  {
+    "name": "Egypt",
+    "alpha2": "EG",
+    "numericCode": "818",
+    "tier": "restrictive",
+    "tierLabel": "Restrictive",
+    "since": null,
+    "details": "Egypt's Dar al-Ifta (Islamic advisory body) issued a fatwa in 2018 declaring Bitcoin trading haram. The CBE has warned against crypto. While no formal blanket ban exists, regulated financial institutions are prohibited from dealing in crypto.",
+    "flag": "🇪🇬"
+  }
+]

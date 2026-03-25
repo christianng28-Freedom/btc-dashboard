@@ -16,6 +16,7 @@ import { SummaryText } from '@/components/dashboard/SummaryText'
 import { KeyAlerts } from '@/components/dashboard/KeyAlerts'
 import { SecondaryInfoBar } from '@/components/dashboard/SecondaryInfoBar'
 import { BacktestPanel } from '@/components/backtest/BacktestPanel'
+import { NewsFeed } from '@/components/global/NewsFeed'
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
 import { calcFundamentalScore } from '@/lib/calc/fundamental-scores'
 import { calcRSI } from '@/lib/calc/rsi'
@@ -127,6 +128,11 @@ export default function DashboardHome() {
 
       {/* Secondary info bar */}
       <SecondaryInfoBar />
+
+      {/* BTC Headlines */}
+      <section className="bg-[#0d0d14] border border-[#1a1a2e] rounded-lg px-4 py-3">
+        <NewsFeed maxItems={6} compact />
+      </section>
 
       {/* Signal Summary */}
       <section>

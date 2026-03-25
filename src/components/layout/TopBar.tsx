@@ -164,6 +164,7 @@ export function TopBar() {
 
       {/* Market ticker cards */}
       <div className="flex items-center gap-2">
+        {/* BTC always visible */}
         <TickerCard
           label="Bitcoin"
           icon={<BitcoinIcon />}
@@ -173,39 +174,50 @@ export function TopBar() {
           loading={isLoading || price === 0}
         />
 
-        <TickerCard
-          label="Solana"
-          icon={<SolanaIcon />}
-          price={solPrice}
-          change={solChange}
-          isPositive={solPositive}
-          loading={indicesLoading || !indices}
-        />
+        {/* SOL visible on sm+ (640px — landscape iPhone and up) */}
+        <div className="hidden sm:block">
+          <TickerCard
+            label="Solana"
+            icon={<SolanaIcon />}
+            price={solPrice}
+            change={solChange}
+            isPositive={solPositive}
+            loading={indicesLoading || !indices}
+          />
+        </div>
 
-        <TickerCard
-          label="Gold"
-          icon={<GoldIcon />}
-          price={goldPrice ? `$${goldPrice}` : ''}
-          change={goldChange}
-          isPositive={goldPositive}
-          loading={indicesLoading || !indices}
-        />
+        {/* Gold visible on md+ (768px+) */}
+        <div className="hidden md:block">
+          <TickerCard
+            label="Gold"
+            icon={<GoldIcon />}
+            price={goldPrice ? `$${goldPrice}` : ''}
+            change={goldChange}
+            isPositive={goldPositive}
+            loading={indicesLoading || !indices}
+          />
+        </div>
 
-        <TickerCard
-          label="S&P 500"
-          price={spxPrice}
-          change={spxChange}
-          isPositive={spxPositive}
-          loading={indicesLoading || !indices}
-        />
+        {/* Indices visible on lg+ (1024px+) */}
+        <div className="hidden lg:block">
+          <TickerCard
+            label="S&P 500"
+            price={spxPrice}
+            change={spxChange}
+            isPositive={spxPositive}
+            loading={indicesLoading || !indices}
+          />
+        </div>
 
-        <TickerCard
-          label="NASDAQ 100"
-          price={ndxPrice}
-          change={ndxChange}
-          isPositive={ndxPositive}
-          loading={indicesLoading || !indices}
-        />
+        <div className="hidden lg:block">
+          <TickerCard
+            label="NASDAQ 100"
+            price={ndxPrice}
+            change={ndxChange}
+            isPositive={ndxPositive}
+            loading={indicesLoading || !indices}
+          />
+        </div>
       </div>
 
       {/* Subtle divider */}

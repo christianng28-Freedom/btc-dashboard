@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { QueryProvider } from '@/providers/QueryProvider'
@@ -7,6 +7,7 @@ import { WebSocketProvider } from '@/providers/WebSocketProvider'
 import { TopBar } from '@/components/layout/TopBar'
 import { NavSidebar } from '@/components/layout/NavSidebar'
 import { MainArea } from '@/components/layout/MainArea'
+import { RegisterSW } from '@/components/layout/RegisterSW'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -23,9 +24,24 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Investment Command Centre',
   description: 'Multi-asset investment analytics dashboard',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'Command',
+    statusBarStyle: 'black-translucent',
+  },
   icons: {
     icon: '/icon.svg',
+    apple: '/apple-icon.png',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#05070A',
 }
 
 export default function RootLayout({
@@ -36,10 +52,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-[#05070A] text-[#e0e0e0] min-h-screen">
+        <RegisterSW />
         <QueryProvider>
           <ThemeProvider>
             <WebSocketProvider>
-              <div className="flex flex-col h-screen overflow-hidden">
+              <div className="app-shell flex flex-col h-screen overflow-hidden">
                 <TopBar />
                 <div className="flex flex-1 overflow-hidden">
                   <NavSidebar />
