@@ -479,4 +479,4 @@
 - [ ] Historical score backtest — "What was the conviction score at past tops/bottoms?"
 - [ ] AI-generated summaries — LLM-powered narrative from current data
 - [ ] Mobile app — React Native companion
-- [ ] MOVE Index live data (ICE BofA source)
+- [x] MOVE Index live data (ICE BofA source)

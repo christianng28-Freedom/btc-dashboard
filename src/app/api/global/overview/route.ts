@@ -9,6 +9,16 @@ export interface MarketSnap {
   sparkline: { date: string; value: number }[]
 }
 
+export type EconomicQuadrant = 'goldilocks' | 'reflation' | 'stagflation' | 'deflation'
+
+export interface RegimeAllocation {
+  equities: number
+  treasuries: number
+  bitcoin: number
+  gold: number
+  cash: number
+}
+
 export interface GlobalOverviewData {
   // Metric heatmap strip
   fedRate: number
@@ -31,10 +41,18 @@ export interface GlobalOverviewData {
   vix: number
   vixChange: number
   vixDate: string
-  // Risk regime
+  // Risk regime (legacy)
   hyOAS: number
   yieldCurve10y2y: number
   regime: 'risk-on' | 'neutral' | 'risk-off'
+  // Enhanced regime
+  regimeScore: number             // 1.0–10.0
+  regimeLabel: string             // 'Crisis' | 'Defensive' | 'Balanced' | 'Risk-On' | 'Euphoria'
+  regimeQuadrant: EconomicQuadrant
+  regimeAllocation: RegimeAllocation
+  realYield10y: number            // DFII10 (%)
+  netLiquidityWoW: number         // Howell: Fed balance - TGA - RRP, WoW change ($B)
+  netLiquidityTotal: number       // Howell: absolute net liquidity level ($B)
   // Key markets
   markets: {
     sp500: MarketSnap
@@ -60,6 +78,60 @@ function mapPrevValue(map: Map<string, number>): number | null {
 function mapToSparkline(map: Map<string, number>, n = 31): { date: string; value: number }[] {
   const entries = Array.from(map.entries())
   return entries.slice(-n).map(([date, value]) => ({ date, value }))
+}
+
+function normalizeClamp(value: number, min: number, max: number): number {
+  return Math.max(0, Math.min(1, (value - min) / (max - min)))
+}
+
+function computeRegimeScore(
+  vix: number, hyOAS: number, t10y2y: number,
+  m2YoY: number, cpiYoY: number,
+  realYield10y: number, netLiqWoW: number,
+): number {
+  const vixScore       = 1 - normalizeClamp(vix, 10, 45)           // high VIX = low score
+  const hyScore        = 1 - normalizeClamp(hyOAS, 250, 850)        // wide spreads = low score
+  const curveScore     = normalizeClamp(t10y2y, -1.5, 1.5)          // steep curve = high score
+  const m2Score        = normalizeClamp(m2YoY, -5, 15)              // growing M2 = high score
+  const cpiScore       = 1 - normalizeClamp(cpiYoY, 0, 10)          // high CPI = lower (Dalio: erodes real returns)
+  const realYieldScore = 1 - normalizeClamp(realYield10y, -1.5, 3.5) // restrictive real yield = low score
+  const howellScore    = normalizeClamp(netLiqWoW, -200, 200)        // Howell: expanding liquidity = high score
+
+  const raw =
+    vixScore       * 0.17 +
+    hyScore        * 0.17 +
+    curveScore     * 0.13 +
+    m2Score        * 0.11 +
+    cpiScore       * 0.13 +
+    realYieldScore * 0.13 +
+    howellScore    * 0.16   // Howell net liquidity gets meaningful weight
+
+  return Math.round((raw * 9 + 1) * 10) / 10  // scale 0–1 to 1.0–10.0
+}
+
+const SCORE_BANDS: Array<{ min: number; label: string; allocation: RegimeAllocation }> = [
+  { min: 9, label: 'Euphoria',  allocation: { equities: 60, treasuries: 5,  bitcoin: 20, gold: 10, cash: 5  } },
+  { min: 7, label: 'Risk-On',   allocation: { equities: 55, treasuries: 15, bitcoin: 15, gold: 10, cash: 5  } },
+  { min: 5, label: 'Balanced',  allocation: { equities: 40, treasuries: 25, bitcoin: 10, gold: 10, cash: 15 } },
+  { min: 3, label: 'Defensive', allocation: { equities: 20, treasuries: 35, bitcoin: 5,  gold: 15, cash: 25 } },
+  { min: 1, label: 'Crisis',    allocation: { equities: 5,  treasuries: 35, bitcoin: 5,  gold: 15, cash: 40 } },
+]
+
+function getAllocation(score: number): { label: string; allocation: RegimeAllocation } {
+  return SCORE_BANDS.find(b => score >= b.min) ?? SCORE_BANDS[SCORE_BANDS.length - 1]
+}
+
+function computeEconomicQuadrant(
+  yieldCurve10y2y: number,
+  unemploymentChange: number,
+  cpiYoYChange: number,
+): EconomicQuadrant {
+  const growthPositive  = yieldCurve10y2y > -0.25 && unemploymentChange <= 0.1
+  const inflationRising = cpiYoYChange > 0.05
+  if (growthPositive && !inflationRising) return 'goldilocks'
+  if (growthPositive && inflationRising)  return 'reflation'
+  if (!growthPositive && inflationRising) return 'stagflation'
+  return 'deflation'
 }
 
 function computeRegime(vix: number, hyOAS: number, t10y2y: number): 'risk-on' | 'neutral' | 'risk-off' {
@@ -97,6 +169,10 @@ export async function GET() {
       nasdaqQuote,
       dxyQuote,
       btcRes,
+      dfii10Obs,
+      walclObs,
+      wtregenObs,
+      rrpObs,
     ] = await Promise.all([
       fetchFREDLatest('DFEDTARL', 2),
       fetchFREDLatest('CPIAUCSL', 14),
@@ -118,6 +194,10 @@ export async function GET() {
         'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily',
         { next: { revalidate: 300 }, headers: { Accept: 'application/json' } },
       ),
+      fetchFREDLatest('DFII10', 3),      // 10Y TIPS real yield
+      fetchFREDLatest('WALCL', 3),       // Fed balance sheet ($M, weekly)
+      fetchFREDLatest('WTREGEN', 3),     // Treasury General Account ($M, weekly)
+      fetchFREDLatest('RRPONTSYD', 3),   // Overnight Reverse Repo ($B, daily)
     ])
 
     // --- Fed Rate ---
@@ -172,6 +252,28 @@ export async function GET() {
     const t10y2y = t10y2yObs[0]?.value ?? 0
     const regime = computeRegime(vixLatest?.value ?? 20, hyOAS, t10y2y)
 
+    // --- Enhanced regime: real yield + Howell net liquidity ---
+    const realYield10y = dfii10Obs[0]?.value ?? 1.5
+
+    // Howell Net Liquidity = Fed Balance Sheet - TGA - RRP (all in $B)
+    const fedAssets     = (walclObs[0]?.value  ?? 0) / 1000   // WALCL in $M → $B
+    const tga           = (wtregenObs[0]?.value ?? 0) / 1000   // WTREGEN in $M → $B
+    const rrp           = rrpObs[0]?.value ?? 0                 // RRPONTSYD already in $B
+    const netLiqTotal   = fedAssets - tga - rrp
+
+    const fedAssetsPrev = (walclObs[1]?.value  ?? walclObs[0]?.value  ?? 0) / 1000
+    const tgaPrev       = (wtregenObs[1]?.value ?? wtregenObs[0]?.value ?? 0) / 1000
+    const rrpPrev       = rrpObs[1]?.value ?? rrpObs[0]?.value ?? 0
+    const netLiqPrev    = fedAssetsPrev - tgaPrev - rrpPrev
+    const netLiqWoW     = netLiqTotal - netLiqPrev
+
+    const regimeScore    = computeRegimeScore(
+      vixLatest?.value ?? 20, hyOAS, t10y2y,
+      m2YoY, cpiYoY, realYield10y, netLiqWoW,
+    )
+    const { label: regimeLabel, allocation: regimeAllocation } = getAllocation(regimeScore)
+    const regimeQuadrant = computeEconomicQuadrant(t10y2y, unemployment - unemploymentPrev, cpiYoY - cpiYoYPrev)
+
     // --- Market sparklines ---
     const sp500Sparkline = Array.from(sp500Map.entries()).slice(-31).map(([date, value]) => ({ date, value }))
     const nasdaqSparkline = Array.from(nasdaqMap.entries()).slice(-31).map(([date, value]) => ({ date, value }))
@@ -223,6 +325,13 @@ export async function GET() {
       hyOAS,
       yieldCurve10y2y: t10y2y,
       regime,
+      regimeScore,
+      regimeLabel,
+      regimeQuadrant,
+      regimeAllocation,
+      realYield10y: Math.round(realYield10y * 100) / 100,
+      netLiquidityWoW: Math.round(netLiqWoW * 10) / 10,
+      netLiquidityTotal: Math.round(netLiqTotal * 10) / 10,
       markets: {
         sp500: {
           price: sp500Quote.price,

@@ -6,7 +6,7 @@ import { MetricHeatmapStrip, MetricItem } from '@/components/widgets/MetricHeatm
 import { KeyMarketsSnapshot } from '@/components/global/KeyMarketsSnapshot'
 import { RiskRegimeBadge } from '@/components/global/RiskRegimeBadge'
 import { MacroCalendar } from '@/components/global/MacroCalendar'
-import { MorningBriefing } from '@/components/global/MorningBriefing'
+
 
 // ── Skeleton helpers ──────────────────────────────────────────────────────────
 
@@ -135,9 +135,6 @@ export default function GlobalOverview() {
         )}
       </div>
 
-      {/* Morning Briefing */}
-      <MorningBriefing />
-
       {/* Macro Metric Heatmap Strip */}
       <section>
         <SectionLabel>Macro Snapshot</SectionLabel>
@@ -163,13 +160,21 @@ export default function GlobalOverview() {
           {/* Risk Regime */}
           <div>
             <SectionLabel>Market Regime</SectionLabel>
-            {isLoading && <SkeletonBlock h="h-32" />}
+            {isLoading && <SkeletonBlock h="h-[520px]" />}
             {data && (
               <RiskRegimeBadge
-                regime={data.regime}
+                regimeScore={data.regimeScore}
+                regimeLabel={data.regimeLabel}
+                regimeQuadrant={data.regimeQuadrant}
+                regimeAllocation={data.regimeAllocation}
                 vix={data.vix}
                 hyOAS={data.hyOAS}
                 yieldCurve10y2y={data.yieldCurve10y2y}
+                m2YoY={data.m2YoY}
+                cpiYoY={data.cpiYoY}
+                cpiYoYChange={data.cpiYoYChange}
+                realYield10y={data.realYield10y}
+                netLiquidityWoW={data.netLiquidityWoW}
               />
             )}
           </div>
