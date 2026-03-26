@@ -211,6 +211,7 @@ export default function EconomicIndicatorsPage() {
   const emp  = data?.employment
   const out  = data?.output
   const lead = data?.leading
+  const pmi  = data?.pmi
 
   // ── Inflation stat cards ────────────────────────────────────────────────
   const inflationMetrics: MetricItem[] = [
@@ -357,6 +358,19 @@ export default function EconomicIndicatorsPage() {
       colorScheme: 'green-red',
       thresholds: { low: -0.7, high: 0 },
       sub: lead ? (lead.latest.cfnai.value > 0 ? 'Above-trend growth' : 'Below-trend growth') : '',
+    },
+  ]
+
+  // ── PMI / Business Activity stat cards ──────────────────────────────────
+  const pmiMetrics: MetricItem[] = [
+    {
+      label: 'US Mfg Confidence',
+      value: pmi ? `${pmi.latest.usMfg.value}` : '—',
+      rawValue: pmi?.latest.usMfg.value,
+      change: pmi?.latest.usMfg.change,
+      colorScheme: 'green-red',
+      thresholds: { low: 0, high: 3 },
+      sub: pmi ? (pmi.latest.usMfg.value >= 0 ? 'Expanding' : 'Contracting') : '',
     },
   ]
 
@@ -507,6 +521,72 @@ export default function EconomicIndicatorsPage() {
             isLoading={isLoading}
             isError={isError}
           />
+        </div>
+      </section>
+
+      {/* ── PMI / Business Activity ─────────────────────────────────────── */}
+      <section className="space-y-4">
+        <SectionHeader
+          title="PMI / Business Activity"
+          description={
+            'Free proxy: OECD Manufacturing Business Confidence via FRED (0-centered, above 0 = expanding). ' +
+            'ISM and S&P Global 50-threshold PMI require subscriptions — open the links below to view live charts.'
+          }
+        />
+        <MetricHeatmapStrip metrics={pmiMetrics} />
+        <FREDTimeSeriesChart
+          title="US Manufacturing Business Confidence (OECD)"
+          description="OECD Business Tendency Survey — 0-centered scale. Above 0 = expanding, below 0 = contracting. Free proxy for ISM Manufacturing PMI."
+          height={220}
+          series={[
+            { key: 'mfg', label: 'US Mfg Confidence', color: '#3b82f6', data: pmi?.usManufacturing ?? [] },
+          ]}
+          formatY={(v) => v.toFixed(1)}
+          referenceLines={[{ y: 0, label: '0 neutral', color: '#555566' }]}
+          source="FRED: BSCICP02USM460S (OECD Business Tendency Survey)"
+          isLoading={isLoading}
+          isError={isError}
+        />
+        {/* ── External PMI links ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            {
+              label: 'US Business Confidence',
+              provider: 'Trading Economics',
+              description: 'US Manufacturing PMI — 50-threshold benchmark. Above 50 = expanding, below 50 = contracting.',
+              sector: 'Manufacturing',
+              color: '#3b82f6',
+              href: 'https://tradingeconomics.com/united-states/business-confidence',
+            },
+            {
+              label: 'US Non-Manufacturing PMI',
+              provider: 'Trading Economics',
+              description: 'ISM Services / Non-Manufacturing PMI. Covers the services sector of the US economy.',
+              sector: 'Services',
+              color: '#22c55e',
+              href: 'https://tradingeconomics.com/united-states/non-manufacturing-pmi',
+            },
+          ].map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#0d0d14] border border-[#1a1a2e] rounded-xl p-4 space-y-2 hover:border-[#333355] transition-colors group"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-[10px] font-mono font-bold" style={{ color: link.color }}>
+                  {link.sector}
+                </div>
+                <svg className="w-3 h-3 text-[#333344] group-hover:text-[#555566] shrink-0 mt-0.5 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </div>
+              <div className="text-xs font-mono font-bold text-[#e0e0e0]">{link.label}</div>
+              <div className="text-[9px] font-mono text-[#444455]">{link.provider}</div>
+              <div className="text-[9px] font-mono text-[#555566] leading-relaxed">{link.description}</div>
+            </a>
+          ))}
         </div>
       </section>
 

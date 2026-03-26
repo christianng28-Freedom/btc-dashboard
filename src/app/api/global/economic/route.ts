@@ -51,6 +51,16 @@ export interface EconomicData {
       cfnai: { value: number; date: string }
     }
   }
+  pmi: {
+    usManufacturing: DataPoint[]
+    usServices:      DataPoint[]
+    globalComposite: DataPoint[]
+    latest: {
+      usMfg:           { value: number; change: number; date: string }
+      usServices:      { value: number; change: number; date: string }
+      globalComposite: { value: number; change: number; date: string }
+    }
+  }
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -145,6 +155,8 @@ export async function GET() {
       fetchFREDSeries('T10Y2Y',          '2016-01-01', 21600),
       fetchFREDSeries('T10Y3M',          '2016-01-01', 21600),
       fetchFREDSeries('CFNAI',           '2015-01-01', 21600),
+      fetchFREDSeries('BSCICP03USM460S', '2015-01-01', 21600), // OECD US Services Business Confidence
+      fetchFREDSeries('BSCICP02OTQ460S', '2015-01-01', 21600), // OECD Global Composite (quarterly)
     ])
     const emptyMap = () => new Map<string, number>()
     const getMap = (r: PromiseSettledResult<Map<string, number>>) =>
@@ -154,6 +166,7 @@ export async function GET() {
       unempMap, payemsMap, icsaMap, civpartMap,
       napmMap, indproMap, umcsentMap, rsxfsMap,
       t10y2yMap, t10y3mMap, cfnaiMap,
+      servicesConfMap, globalCompMap,
     ] = settled.map(getMap)
 
     // ── Inflation ───────────────────────────────────────────────────────
@@ -192,6 +205,10 @@ export async function GET() {
     const t10y2yArr  = mapToArray(t10y2yMap)
     const t10y3mArr  = mapToArray(t10y3mMap)
     const cfnaiArr   = mapToArray(cfnaiMap)
+
+    // ── PMI / Business Activity ─────────────────────────────────────────
+    const usServicesArr = mapToArray(servicesConfMap)
+    const globalCompArr = mapToArray(globalCompMap)
 
     const data: EconomicData = {
       inflation: {
@@ -268,6 +285,28 @@ export async function GET() {
           spread10y2y: { value: r1(last(t10y2yArr)?.value ?? 0), date: last(t10y2yArr)?.date ?? '' },
           spread10y3m: { value: r1(last(t10y3mArr)?.value ?? 0), date: last(t10y3mArr)?.date ?? '' },
           cfnai:       { value: r1(last(cfnaiArr)?.value ?? 0),  date: last(cfnaiArr)?.date ?? '' },
+        },
+      },
+      pmi: {
+        usManufacturing: ismArr,
+        usServices:      usServicesArr,
+        globalComposite: globalCompArr,
+        latest: {
+          usMfg: {
+            value:  r1(last(ismArr)?.value ?? 0),
+            change: r1((last(ismArr)?.value ?? 0) - (prev(ismArr)?.value ?? 0)),
+            date:   last(ismArr)?.date ?? '',
+          },
+          usServices: {
+            value:  r1(last(usServicesArr)?.value ?? 0),
+            change: r1((last(usServicesArr)?.value ?? 0) - (prev(usServicesArr)?.value ?? 0)),
+            date:   last(usServicesArr)?.date ?? '',
+          },
+          globalComposite: {
+            value:  r1(last(globalCompArr)?.value ?? 0),
+            change: r1((last(globalCompArr)?.value ?? 0) - (prev(globalCompArr)?.value ?? 0)),
+            date:   last(globalCompArr)?.date ?? '',
+          },
         },
       },
     }

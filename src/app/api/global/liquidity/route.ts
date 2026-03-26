@@ -1,8 +1,32 @@
 import { NextResponse } from 'next/server'
 import { fetchFREDSeries } from '@/lib/api/fred'
-import { fetchKlines } from '@/lib/api/binance'
 
 export type DataPoint = { date: string; value: number }
+
+const CC_HISTODAY = 'https://min-api.cryptocompare.com/data/v2/histoday'
+
+interface CCCandle { time: number; close: number }
+
+async function fetchBtcWeekly(weeks: number): Promise<DataPoint[]> {
+  const params = new URLSearchParams({
+    fsym: 'BTC', tsym: 'USD',
+    limit: String(weeks),
+    aggregate: '7',
+  })
+  const res = await fetch(`${CC_HISTODAY}?${params}`, {
+    signal: AbortSignal.timeout(10000),
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) return []
+  const json = (await res.json()) as { Response: string; Data: { Data: CCCandle[] } }
+  if (json.Response !== 'Success') return []
+  return json.Data.Data
+    .filter((k) => k.close > 0)
+    .map((k) => ({
+      date:  new Date(k.time * 1000).toISOString().slice(0, 10),
+      value: k.close,
+    }))
+}
 
 export interface NetLiqPoint {
   date: string
@@ -125,8 +149,8 @@ export async function GET() {
       // Credit
       fetchFREDSeries('TOTBKCR',          start5, 3600),  // Total bank credit, billions USD
       fetchFREDSeries('BUSLOANS',         start5, 3600),  // C&I loans, billions USD
-      // BTC weekly ~5y
-      fetchKlines('BTCUSDT', '1w', 300),
+      // BTC weekly ~5y via CryptoCompare (works on Vercel; Binance klines are geo-blocked)
+      fetchBtcWeekly(300),
     ])
 
     const g = (r: PromiseSettledResult<Map<string, number>>): DataPoint[] =>
@@ -174,12 +198,7 @@ export async function GET() {
 
     // ── BTC price ────────────────────────────────────────────────────────
     const btcHistory: DataPoint[] =
-      btcR.status === 'fulfilled'
-        ? btcR.value.map((k) => ({
-            date:  new Date(k.openTime).toISOString().slice(0, 10),
-            value: parseFloat(k.close),
-          }))
-        : []
+      btcR.status === 'fulfilled' ? btcR.value : []
 
     // ── Assemble response ────────────────────────────────────────────────
     const body: LiquidityData = {

@@ -16,6 +16,8 @@ import { FREDTimeSeriesChart } from '@/components/charts/FREDTimeSeriesChart'
 import { DualAxisChart } from '@/components/charts/DualAxisChart'
 import { MetricHeatmapStrip, type MetricItem } from '@/components/widgets/MetricHeatmapStrip'
 import { YieldCurveSnapshotChart } from '@/components/charts/YieldCurveSnapshotChart'
+import { FedFundsChart } from '@/components/fundamental/FedFundsChart'
+import { TreasuryYieldChart } from '@/components/fundamental/TreasuryYieldChart'
 import type { DataPoint } from '@/app/api/global/rates/route'
 
 // ── shared chart styles ────────────────────────────────────────────────────
@@ -422,6 +424,16 @@ export default function TreasuryRatesPage() {
   const snap      = data?.snapshot
   const spreads   = data?.spreads
   const keyRates  = data?.keyRates
+
+  // Build { date, upper, lower }[] for FedFundsChart
+  const fedFundsRangeData = (() => {
+    const upperArr = keyRates?.fedFunds ?? []
+    const lowerArr = keyRates?.fedFundsLower ?? []
+    const lowerMap = new Map(lowerArr.map((p) => [p.date, p.value]))
+    return upperArr
+      .filter((p) => lowerMap.has(p.date))
+      .map((p) => ({ date: p.date, upper: p.value, lower: lowerMap.get(p.date)! }))
+  })()
   const credit    = data?.credit
   const realRates = data?.realRates
   const move      = data?.move
@@ -607,6 +619,26 @@ export default function TreasuryRatesPage() {
           Yield curve, key rates, credit conditions & real rates — US fixed income via FRED
         </p>
       </div>
+
+      {/* ── Fed Policy & 10Y Benchmark ───────────────────────────────────── */}
+      <section className="space-y-4">
+        <SectionHeader
+          title="Fed Policy & 10Y Benchmark"
+          description="The two pivotal rates: Fed Funds target range set by the FOMC, and the 10-year Treasury — the global risk-free benchmark."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FedFundsChart
+            data={fedFundsRangeData}
+            isLoading={isLoading}
+            isError={isError}
+          />
+          <TreasuryYieldChart
+            data={keyRates?.y10 ?? []}
+            isLoading={isLoading}
+            isError={isError}
+          />
+        </div>
+      </section>
 
       {/* ── Yield Curve Snapshot ──────────────────────────────────────────── */}
       <section className="space-y-4">

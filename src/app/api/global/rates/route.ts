@@ -29,6 +29,7 @@ export interface RatesData {
   }
   keyRates: {
     fedFunds: DataPoint[]
+    fedFundsLower: DataPoint[]
     y2: DataPoint[]
     y10: DataPoint[]
     y20: DataPoint[]
@@ -144,7 +145,7 @@ export async function GET() {
       dgs1moMap, dgs3moMap, dgs6moMap, dgs1Map, dgs2Map, dgs3Map,
       dgs5Map, dgs7Map, dgs10Map, dgs20Map, dgs30Map,
       t10y2yMap, t10y3mMap,
-      dfedtaruMap, sofrMap,
+      dfedtaruMap, dfedtarlMap, sofrMap,
       bamlhyMap, bamlcigMap,
       dfii10Map, t10yieMap,
       usrecMap,
@@ -164,6 +165,7 @@ export async function GET() {
       fetchFREDSeries('T10Y2Y',       '2015-01-01', 21600),
       fetchFREDSeries('T10Y3M',       '2015-01-01', 21600),
       fetchFREDSeries('DFEDTARU',     '2015-01-01', 21600),
+      fetchFREDSeries('DFEDTARL',     '2015-01-01', 21600),
       fetchFREDSeries('SOFR',         '2018-04-01', 21600),
       fetchFREDSeries('BAMLH0A0HYM2', '2015-01-01', 21600),
       fetchFREDSeries('BAMLC0A0CM',   '2015-01-01', 21600),
@@ -210,7 +212,8 @@ export async function GET() {
     const spread10y3mArr = mapToArray(t10y3mMap)
 
     // ── Key Rates ────────────────────────────────────────────────────────
-    const fedFundsArr = mapToArray(dfedtaruMap)
+    const fedFundsArr      = mapToArray(dfedtaruMap)
+    const fedFundsLowerArr = mapToArray(dfedtarlMap)
     const dgs2Arr     = mapToArray(dgs2Map)
     const dgs20Arr    = mapToArray(dgs20Map)
     const dgs30Arr    = mapToArray(dgs30Map)
@@ -262,8 +265,9 @@ export async function GET() {
         },
       },
       keyRates: {
-        fedFunds: fedFundsArr,
-        y2:       dgs2Arr,
+        fedFunds:      fedFundsArr,
+        fedFundsLower: fedFundsLowerArr,
+        y2:            dgs2Arr,
         y10:      dgs10Arr,
         y20:      dgs20Arr,
         y30:      dgs30Arr,
