@@ -480,3 +480,8 @@
 - [ ] AI-generated summaries — LLM-powered narrative from current data
 - [ ] Mobile app — React Native companion
 - [x] MOVE Index live data (ICE BofA source)
+
+
+Other Ideas
+- Kelly Criterion section (running different scenarios)
+- DCA vs Lump sump back testing 

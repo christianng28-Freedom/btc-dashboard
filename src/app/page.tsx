@@ -40,9 +40,12 @@ function MarketsSkeleton() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#444455] mb-3">
-      {children}
-    </h2>
+    <div className="flex items-center gap-3 mb-4">
+      <h2 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#3a3a52] whitespace-nowrap">
+        {children}
+      </h2>
+      <div className="flex-1 h-px bg-gradient-to-r from-[#1a1a2e] to-transparent" />
+    </div>
   )
 }
 
@@ -122,15 +125,18 @@ export default function GlobalOverview() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       {/* Page header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-end justify-between border-b border-[#13131f] pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#e0e0e0]">Global Overview</h1>
-          <p className="text-sm text-[#666] mt-0.5">Multi-asset macro snapshot</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3a3a52] mb-1.5">
+            BTC Command
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#e8e8f0]">Global Overview</h1>
+          <p className="text-sm text-[#44445a] mt-1">Multi-asset macro snapshot</p>
         </div>
         {data && (
-          <div className="text-[9px] font-mono text-[#444455] text-right">
-            <div>FRED · Yahoo · Stooq · CoinGecko</div>
-            <div className="mt-0.5 text-[#333344]">Refreshes every 30 min</div>
+          <div className="text-[10px] font-mono text-[#333344] text-right">
+            <div className="text-[#3a3a52]">FRED · Yahoo · Stooq · CoinGecko</div>
+            <div className="mt-1 text-[#2a2a3a]">Refreshes every 30 min</div>
           </div>
         )}
       </div>
@@ -154,35 +160,31 @@ export default function GlobalOverview() {
         {data && <KeyMarketsSnapshot markets={data.markets} />}
       </section>
 
-      {/* Risk Regime + Macro Calendar */}
+      {/* Market Regime */}
       <section>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Risk Regime */}
-          <div>
-            <SectionLabel>Market Regime</SectionLabel>
-            {isLoading && <SkeletonBlock h="h-[520px]" />}
-            {data && (
-              <RiskRegimeBadge
-                regimeScore={data.regimeScore}
-                regimeLabel={data.regimeLabel}
-                regimeQuadrant={data.regimeQuadrant}
-                regimeAllocation={data.regimeAllocation}
-                vix={data.vix}
-                hyOAS={data.hyOAS}
-                yieldCurve10y2y={data.yieldCurve10y2y}
-                m2YoY={data.m2YoY}
-                cpiYoY={data.cpiYoY}
-                cpiYoYChange={data.cpiYoYChange}
-                realYield10y={data.realYield10y}
-                netLiquidityWoW={data.netLiquidityWoW}
-              />
-            )}
-          </div>
-          {/* Macro Calendar */}
-          <div>
-            <MacroCalendar maxItems={6} />
-          </div>
-        </div>
+        <SectionLabel>Market Regime</SectionLabel>
+        {isLoading && <SkeletonBlock h="h-[520px]" />}
+        {data && (
+          <RiskRegimeBadge
+            regimeScore={data.regimeScore}
+            regimeLabel={data.regimeLabel}
+            regimeQuadrant={data.regimeQuadrant}
+            regimeAllocation={data.regimeAllocation}
+            vix={data.vix}
+            hyOAS={data.hyOAS}
+            yieldCurve10y2y={data.yieldCurve10y2y}
+            m2YoY={data.m2YoY}
+            cpiYoY={data.cpiYoY}
+            cpiYoYChange={data.cpiYoYChange}
+            realYield10y={data.realYield10y}
+            netLiquidityWoW={data.netLiquidityWoW}
+          />
+        )}
+      </section>
+
+      {/* Macro Calendar */}
+      <section>
+        <MacroCalendar maxItems={8} />
       </section>
 
     </div>

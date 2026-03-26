@@ -19,14 +19,14 @@ async function fetchPrice(): Promise<ApiPriceResponse> {
 }
 
 /**
- * Fetches /api/price every 10s via TanStack Query.
+ * Fetches /api/price every 60s via TanStack Query.
  * Merges WebSocket live price updates on top of the REST data.
  */
 export function usePrice(): PriceData & { isLoading: boolean; isError: boolean } {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['price'],
     queryFn: fetchPrice,
-    refetchInterval: 10_000,
+    refetchInterval: 60_000,
   })
 
   const { lastPrice, priceChange, priceChangePercent } = useWebSocket()

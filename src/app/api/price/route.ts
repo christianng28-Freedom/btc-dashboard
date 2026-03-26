@@ -18,7 +18,7 @@ interface BinanceTickerResponse {
 export async function GET() {
   try {
     const res = await fetch(BINANCE_TICKER_URL, {
-      next: { revalidate: 10 },
+      next: { revalidate: 60 },
     })
 
     if (!res.ok) {
@@ -41,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json(payload, {
       headers: {
-        'Cache-Control': 's-maxage=10, stale-while-revalidate=20',
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=120',
       },
     })
   } catch (err) {
