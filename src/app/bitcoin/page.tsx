@@ -113,7 +113,7 @@ export default function DashboardHome() {
       {/* Page header */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#e0e0e0]">Bitcoin Dashboard</h1>
+          <h1 className="text-2xl font-bold text-[#e0e0e0]">Bitcoin Overview</h1>
           <p className="text-sm text-[#666] mt-0.5">Bitcoin conviction dashboard</p>
         </div>
         {price > 0 && (

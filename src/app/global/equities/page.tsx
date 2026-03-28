@@ -538,10 +538,10 @@ export default function EquitiesPage() {
       colorScheme: 'green-red',
     },
     {
-      label:  'Nasdaq 100',
+      label:  'Nasdaq Composite',
       value:  data?.usIndices.nasdaq.price  ? fmtPrice(data.usIndices.nasdaq.price)  : '—',
       change: data?.usIndices.nasdaq.change1d  ?? 0,
-      sub:    '^NDX',
+      sub:    '^IXIC',
       colorScheme: 'green-red',
     },
     {

@@ -156,7 +156,7 @@ export async function GET() {
     ] = await Promise.allSettled([
       // FRED — US indices + VIX
       fetchFREDSeries('SP500',      start2y, 3600),
-      fetchYahooFinanceDaily('^NDX', '2y'),
+      fetchYahooFinanceDaily('^IXIC', '2y'),
       fetchFREDSeries('VIXCLS',     start2y, 3600),
       // Yahoo Finance — US indices not on FRED
       fetchYahooFinanceDaily('^RUT',  '2y'),
@@ -213,7 +213,7 @@ export async function GET() {
     const body: EquitiesData = {
       usIndices: {
         sp500:       buildEquityIndex(sp500Arr,  'S&P 500',      'SP500'),
-        nasdaq:      buildEquityIndex(nasdaqArr, 'Nasdaq 100',   '^NDX'),
+        nasdaq:      buildEquityIndex(nasdaqArr, 'Nasdaq Composite', '^IXIC'),
         russell2000: buildEquityIndex(rutArr,    'Russell 2000', '^RUT'),
         dowJones:    buildEquityIndex(djiArr,    'Dow Jones',    '^DJI'),
       },

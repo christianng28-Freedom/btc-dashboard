@@ -185,10 +185,10 @@ export async function GET() {
       fetchFREDLatest('BAMLH0A0HYM2', 2),
       fetchFREDLatest('T10Y2Y', 2),
       fetchYahooFinanceDaily('^GSPC', '3mo', 300),
-      fetchYahooFinanceDaily('^NDX', '3mo', 300),
+      fetchYahooFinanceDaily('^IXIC', '3mo', 300),
       fetchStooqDaily('xauusd', 3600),
       fetchYahooFinanceQuote('^GSPC'),
-      fetchYahooFinanceQuote('^NDX'),
+      fetchYahooFinanceQuote('^IXIC'),
       fetchYahooFinanceQuote('DX-Y.NYB'),
       fetch(
         'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily',

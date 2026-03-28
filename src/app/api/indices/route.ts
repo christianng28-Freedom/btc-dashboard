@@ -51,7 +51,7 @@ export async function GET() {
   try {
     const [spx, ndx, gold, sol] = await Promise.all([
       fetchYahooQuote('^GSPC'),
-      fetchYahooQuote('^NDX'),
+      fetchYahooQuote('^IXIC'),
       fetchYahooQuote('GC=F'),
       fetchYahooQuote('SOL-USD'),
     ])

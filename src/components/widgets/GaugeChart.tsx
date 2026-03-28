@@ -49,7 +49,7 @@ export function GaugeChart({ score, label, color, size = 180, title, subtitle }:
   return (
     <div className="flex flex-col items-center">
       {title && (
-        <div className="text-[10px] text-[#666666] uppercase tracking-widest mb-1 font-mono">{title}</div>
+        <div className="text-[10px] text-[#888888] uppercase tracking-wider mb-1 font-mono">{title}</div>
       )}
       <svg width={size} height={size * 0.65} viewBox={`0 0 ${size} ${size * 0.65}`} style={{ overflow: 'visible' }}>
         {/* Background track */}
@@ -122,28 +122,18 @@ export function GaugeChart({ score, label, color, size = 180, title, subtitle }:
           {Math.round(clampedScore)}
         </text>
 
-        {/* Signal label */}
-        <text
-          x={cx}
-          y={cy + size * 0.08}
-          textAnchor="middle"
-          fontSize={size * 0.075}
-          fontFamily="JetBrains Mono, monospace"
-          fill={color}
-        >
-          {label}
-        </text>
-
-        {/* Min / Max labels */}
-        <text x={cx - r - 4} y={cy + 14} textAnchor="end" fontSize={size * 0.06} fill="#444455" fontFamily="monospace">
+        {/* Min / Max labels — sit right at the arc endpoints */}
+        <text x={cx - r - 10} y={cy + 10} textAnchor="end" fontSize={size * 0.072} fill="#556677" fontFamily="monospace">
           BUY
         </text>
-        <text x={cx + r + 4} y={cy + 14} textAnchor="start" fontSize={size * 0.06} fill="#444455" fontFamily="monospace">
+        <text x={cx + r + 10} y={cy + 10} textAnchor="start" fontSize={size * 0.072} fill="#556677" fontFamily="monospace">
           SELL
         </text>
       </svg>
+      {/* Signal label — outside SVG so it has clean spacing */}
+      <div className="text-[12px] font-mono font-semibold mt-1" style={{ color }}>{label}</div>
       {subtitle && (
-        <div className="text-[10px] text-[#555566] font-mono mt-1">{subtitle}</div>
+        <div className="text-[10px] text-[#6666aa] font-mono mt-1 tracking-wide">{subtitle}</div>
       )}
     </div>
   )

@@ -203,7 +203,7 @@ export function TopBar() {
             loading={indicesLoading || !indices}
           />
           <TickerCard
-            label="NASDAQ 100"
+            label="NASDAQ Composite"
             price={ndxPrice}
             change={ndxChange}
             isPositive={ndxPositive}
