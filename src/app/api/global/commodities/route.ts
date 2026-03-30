@@ -119,6 +119,7 @@ export async function GET() {
       goldR, silverR, platR,
       wtiStooqR, brentStooqR, ngStooqR, copperStooqR, lumberStooqR,
       btcR,
+      goldYahooR, silverYahooR, platYahooR,
       wtiFredR, brentFredR, ngFredR, copperFredR, lumberYahooR,
     ] =
       await Promise.allSettled([
@@ -131,6 +132,10 @@ export async function GET() {
         fetchStooqDaily('hg.f'),
         fetchStooqDaily('ls.f'),
         fetchKlines('BTCUSDT', '1d', 400),
+        // Yahoo Finance fallbacks for precious metals
+        fetchYahooFinanceDaily('GC=F', '5y', 3600),   // Gold futures USD/troy oz
+        fetchYahooFinanceDaily('SI=F', '5y', 3600),   // Silver futures USD/troy oz
+        fetchYahooFinanceDaily('PL=F', '5y', 3600),   // Platinum futures USD/troy oz
         // FRED fallbacks for energy & industrial
         fetchFREDSeries('DCOILWTICO',   startStr, 3600),
         fetchFREDSeries('DCOILBRENTEU', startStr, 3600),
@@ -160,9 +165,9 @@ export async function GET() {
       return transform ? fredArr.map((p) => ({ ...p, value: transform(p.value) })) : fredArr
     }
 
-    const goldArr   = g(goldR)
-    const silverArr = g(silverR)
-    const platArr   = g(platR)
+    const goldArr   = withFallback(goldR,   goldYahooR)
+    const silverArr = withFallback(silverR, silverYahooR)
+    const platArr   = withFallback(platR,   platYahooR)
     const wtiArr    = withFallback(wtiStooqR,   wtiFredR)
     const brentArr  = withFallback(brentStooqR, brentFredR)
     const ngArr     = withFallback(ngStooqR,    ngFredR)
