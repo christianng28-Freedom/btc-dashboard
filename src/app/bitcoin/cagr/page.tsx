@@ -199,7 +199,7 @@ function NumericInput({
 function CustomChartTooltip({ active, payload, label, startYear, btcPrice, btcHoldings, activeTab }: CustomTooltipProps) {
   if (!active || !payload || !payload.length) return null
   const year = parseInt(label ?? '0')
-  const yearsElapsed = year - startYear
+  const yearsElapsed = year - startYear + 1
 
   return (
     <div className="bg-[#0d1018] border border-[#1a1a2e] rounded-lg p-3 shadow-2xl min-w-[220px]">
@@ -253,7 +253,7 @@ export default function CagrPage() {
   const chartData = useMemo(() => years.map(year => {
     const point: Record<string, number | string> = { year }
     allCagrs.forEach(cagr => {
-      const price = calcFuturePrice(btcPrice, cagr, year - startYear)
+      const price = calcFuturePrice(btcPrice, cagr, year - startYear + 1)
       point[`cagr_${cagr}`] = activeTab === 'price' ? price : price * btcHoldings
     })
     return point
@@ -305,17 +305,15 @@ export default function CagrPage() {
     // Price section
     rows.push('BTC PRICE PROJECTIONS')
     rows.push(['BTC Price', 'Year', ...allCagrs.map(c => `${c}% CAGR`)].join(','))
-    rows.push([`$${btcPrice}`, startYear, ...allCagrs.map(c => calcFuturePrice(btcPrice, c, 0).toFixed(2))].join(','))
-    years.slice(1).forEach(year => {
-      rows.push(['', year, ...allCagrs.map(c => calcFuturePrice(btcPrice, c, year - startYear).toFixed(2))].join(','))
+    years.forEach(year => {
+      rows.push(['', year, ...allCagrs.map(c => calcFuturePrice(btcPrice, c, year - startYear + 1).toFixed(2))].join(','))
     })
     rows.push('')
     // Portfolio section
     rows.push('PORTFOLIO VALUE PROJECTIONS')
     rows.push(['BTC Price', 'Year', `BTC #`, 'BTC Total', ...allCagrs.map(c => `${c}% CAGR`)].join(','))
-    rows.push([`$${btcPrice}`, startYear, btcHoldings, `$${initialPortfolioValue}`, ...allCagrs.map(c => (calcFuturePrice(btcPrice, c, 0) * btcHoldings).toFixed(2))].join(','))
-    years.slice(1).forEach(year => {
-      rows.push(['', year, '', '', ...allCagrs.map(c => (calcFuturePrice(btcPrice, c, year - startYear) * btcHoldings).toFixed(2))].join(','))
+    years.forEach(year => {
+      rows.push(['', year, '', '', ...allCagrs.map(c => (calcFuturePrice(btcPrice, c, year - startYear + 1) * btcHoldings).toFixed(2))].join(','))
     })
 
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
@@ -332,7 +330,7 @@ export default function CagrPage() {
     const headers = ['Year', ...allCagrs.map(c => `${c}%`)]
     const tableRows = years.map(year => {
       const values = allCagrs.map(cagr => {
-        const price = calcFuturePrice(btcPrice, cagr, year - startYear)
+        const price = calcFuturePrice(btcPrice, cagr, year - startYear + 1)
         const val = activeTab === 'price' ? price : price * btcHoldings
         return formatValue(val)
       })
@@ -347,7 +345,7 @@ export default function CagrPage() {
 
   // What-If calculation
   const requiredCagr = useMemo(() => {
-    const yearsElapsed = whatIfYear - startYear
+    const yearsElapsed = whatIfYear - startYear + 1
     if (yearsElapsed <= 0 || btcPrice <= 0) return null
     const cagr = (Math.pow(whatIfTarget / btcPrice, 1 / yearsElapsed) - 1) * 100
     return cagr > 0 ? cagr : null
@@ -358,7 +356,7 @@ export default function CagrPage() {
     return allCagrs.map(cagr => {
       let firstMillionYear: number | null = null
       for (const year of years) {
-        const price = calcFuturePrice(btcPrice, cagr, year - startYear)
+        const price = calcFuturePrice(btcPrice, cagr, year - startYear + 1)
         const val = activeTab === 'price' ? price : price * btcHoldings
         if (val >= 1_000_000 && firstMillionYear === null) {
           firstMillionYear = year
@@ -367,7 +365,7 @@ export default function CagrPage() {
       const milestones: Record<number, number> = {}
       MILESTONE_YEARS.forEach(my => {
         if (my >= startYear && my <= endYear) {
-          const price = calcFuturePrice(btcPrice, cagr, my - startYear)
+          const price = calcFuturePrice(btcPrice, cagr, my - startYear + 1)
           milestones[my] = activeTab === 'price' ? price : price * btcHoldings
         }
       })
@@ -455,6 +453,11 @@ export default function CagrPage() {
                 )
               })}
             </div>
+            {btcPrice === 87500 && (
+              <div className="text-[10px] text-white/30 italic">
+                $87,500 = BTC opening price 1st Jan 2026
+              </div>
+            )}
           </div>
 
           {/* BTC Holdings */}
@@ -614,20 +617,17 @@ export default function CagrPage() {
       {/* ── Table Section ───────────────────────────────────────────────────── */}
       <div className="bg-[#0d1018] border border-[#1a1a2e] rounded-xl overflow-hidden">
         {/* Tab Toggle */}
-        <div className="flex items-center border-b border-[#1a1a2e]">
+        <div className="flex items-center gap-1 p-2 border-b border-[#1a1a2e] bg-[#080b11]">
           {(['price', 'portfolio'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 sm:flex-none px-6 py-3.5 text-[13px] font-semibold transition-all duration-150 relative ${
+              className={`flex-1 sm:flex-none px-5 py-2.5 text-[13px] font-semibold rounded-md transition-all duration-150 ${
                 activeTab === tab
-                  ? 'text-white'
-                  : 'text-white/35 hover:text-white/60'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(52,211,153,0.1)]'
+                  : 'text-white/50 hover:text-white/80 hover:bg-white/5 border border-transparent'
               }`}
             >
-              {activeTab === tab && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-t-full" />
-              )}
               {tab === 'price' ? 'Price Assessment' : 'Portfolio Assessment'}
             </button>
           ))}
@@ -695,14 +695,14 @@ export default function CagrPage() {
                   </td>
                   {/* CAGR values */}
                   {allCagrs.map(cagr => {
-                    const price = calcFuturePrice(btcPrice, cagr, year - startYear)
+                    const price = calcFuturePrice(btcPrice, cagr, year - startYear + 1)
                     const val = activeTab === 'price' ? price : price * btcHoldings
                     const isMillion = val >= 1_000_000
 
                     return (
                       <td
                         key={cagr}
-                        title={`${year}: $${btcPrice.toLocaleString()} × (1 + ${cagr}%)^${year - startYear}${activeTab === 'portfolio' ? ` × ${btcHoldings} BTC` : ''} = ${formatValue(val)}`}
+                        title={`${year}: $${btcPrice.toLocaleString()} × (1 + ${cagr}%)^${year - startYear + 1}${activeTab === 'portfolio' ? ` × ${btcHoldings} BTC` : ''} = ${formatValue(val)}`}
                         className={`px-4 py-2.5 text-right font-mono font-semibold whitespace-nowrap transition-colors ${
                           isMillion
                             ? 'bg-emerald-600/25 text-emerald-300'
@@ -827,7 +827,7 @@ export default function CagrPage() {
               formatter={(value: string) => {
                 const cagr = parseFloat(value.replace('cagr_', ''))
                 const finalYear = years[years.length - 1]
-                const price = calcFuturePrice(btcPrice, cagr, finalYear - startYear)
+                const price = calcFuturePrice(btcPrice, cagr, finalYear - startYear + 1)
                 const val = activeTab === 'price' ? price : price * btcHoldings
                 return (
                   <span style={{ color: getCagrColorMemo(cagr), fontSize: 12 }}>
