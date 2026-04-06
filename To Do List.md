@@ -485,3 +485,5 @@
 Other Ideas
 - Kelly Criterion section (running different scenarios)
 - DCA vs Lump sump back testing 
+- Economic indicators can we go back like 20 years of historical data (then be able to select date ranges) 
+-level of applicability can improve tremendously if you overlay periods of big market drawdown or recession with the key indicators
