@@ -7,6 +7,7 @@ import {
   Tooltip,
   Legend,
   ReferenceLine,
+  ReferenceArea,
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts'
@@ -32,6 +33,7 @@ interface Props {
   formatY?: (v: number) => string
   yDomain?: [number | 'auto', number | 'auto']
   referenceLines?: ReferenceLineConfig[]
+  recessionBands?: Array<{ start: string; end: string }>
   source?: string
   isLoading?: boolean
   isError?: boolean
@@ -62,6 +64,7 @@ export function FREDTimeSeriesChart({
   formatY = (v) => v.toLocaleString(),
   yDomain,
   referenceLines,
+  recessionBands,
   source,
   isLoading,
   isError,

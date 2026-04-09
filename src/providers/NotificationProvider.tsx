@@ -152,7 +152,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       })
 
       const icon = '/apple-touch-icon.png'
-      const options: NotificationOptions = { body, tag, icon, renotify: false }
+      const options: NotificationOptions = { body, tag, icon }
 
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         new Notification(title, options)

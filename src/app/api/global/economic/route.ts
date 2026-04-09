@@ -3,6 +3,8 @@ import { fetchFREDSeries } from '@/lib/api/fred'
 
 export type DataPoint = { date: string; value: number }
 
+export type RecessionBand = { start: string; end: string }
+
 export interface EconomicData {
   inflation: {
     cpiYoY: DataPoint[]
@@ -61,6 +63,7 @@ export interface EconomicData {
       globalComposite: { value: number; change: number; date: string }
     }
   }
+  recessionBands: RecessionBand[]
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -119,6 +122,26 @@ function compute4PMA(sorted: DataPoint[]): DataPoint[] {
   return result
 }
 
+function computeRecessionBands(map: Map<string, number>, startFilter: string): RecessionBand[] {
+  const sorted = Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .filter(([d]) => d >= startFilter)
+  const bands: RecessionBand[] = []
+  let inRecession = false
+  let start = ''
+  for (const [date, value] of sorted) {
+    if (!inRecession && value === 1) {
+      inRecession = true
+      start = date
+    } else if (inRecession && value === 0) {
+      inRecession = false
+      bands.push({ start, end: date })
+    }
+  }
+  if (inRecession) bands.push({ start, end: sorted[sorted.length - 1][0] })
+  return bands
+}
+
 function r1(v: number): number {
   return Math.round(v * 10) / 10
 }
@@ -140,23 +163,24 @@ export async function GET() {
     }
 
     const settled = await Promise.allSettled([
-      fetchFREDSeries('CPIAUCSL',        '2014-01-01', 21600),
-      fetchFREDSeries('CPILFESL',        '2014-01-01', 21600),
-      fetchFREDSeries('PCEPILFE',        '2014-01-01', 21600),
-      fetchFREDSeries('PPIACO',          '2014-01-01', 21600),
-      fetchFREDSeries('UNRATE',          '2015-01-01', 21600),
-      fetchFREDSeries('PAYEMS',          '2015-01-01', 21600),
-      fetchFREDSeries('ICSA',            '2016-01-01', 21600),
-      fetchFREDSeries('CIVPART',         '2015-01-01', 21600),
-      fetchFREDSeries('BSCICP02USM460S', '2015-01-01', 21600), // OECD Mfg Business Confidence (replaced discontinued CHPMINDX)
-      fetchFREDSeries('INDPRO',          '2014-01-01', 21600),
-      fetchFREDSeries('UMCSENT',         '2015-01-01', 21600),
-      fetchFREDSeries('RSXFS',           '2014-01-01', 21600),
-      fetchFREDSeries('T10Y2Y',          '2016-01-01', 21600),
-      fetchFREDSeries('T10Y3M',          '2016-01-01', 21600),
-      fetchFREDSeries('CFNAI',           '2015-01-01', 21600),
-      fetchFREDSeries('BSCICP03USM460S', '2015-01-01', 21600), // OECD US Services Business Confidence
-      fetchFREDSeries('BSCICP02OTQ460S', '2015-01-01', 21600), // OECD Global Composite (quarterly)
+      fetchFREDSeries('CPIAUCSL',        '1995-01-01', 21600),
+      fetchFREDSeries('CPILFESL',        '1995-01-01', 21600),
+      fetchFREDSeries('PCEPILFE',        '1995-01-01', 21600),
+      fetchFREDSeries('PPIACO',          '1995-01-01', 21600),
+      fetchFREDSeries('UNRATE',          '1995-01-01', 21600),
+      fetchFREDSeries('PAYEMS',          '1995-01-01', 21600),
+      fetchFREDSeries('ICSA',            '1995-01-01', 21600),
+      fetchFREDSeries('CIVPART',         '1995-01-01', 21600),
+      fetchFREDSeries('BSCICP02USM460S', '2012-01-01', 21600), // OECD Mfg Business Confidence (data from ~2012)
+      fetchFREDSeries('INDPRO',          '1995-01-01', 21600),
+      fetchFREDSeries('UMCSENT',         '1995-01-01', 21600),
+      fetchFREDSeries('RSXFS',           '1995-01-01', 21600),
+      fetchFREDSeries('T10Y2Y',          '1995-01-01', 21600),
+      fetchFREDSeries('T10Y3M',          '1995-01-01', 21600),
+      fetchFREDSeries('CFNAI',           '1995-01-01', 21600),
+      fetchFREDSeries('BSCICP03USM460S', '2012-01-01', 21600), // OECD US Services Business Confidence (data from ~2012)
+      fetchFREDSeries('BSCICP02OTQ460S', '2012-01-01', 21600), // OECD Global Composite (data from ~2012)
+      fetchFREDSeries('USREC',           '1995-01-01', 86400), // NBER recession indicator (daily cache)
     ])
     const emptyMap = () => new Map<string, number>()
     const getMap = (r: PromiseSettledResult<Map<string, number>>) =>
@@ -166,7 +190,7 @@ export async function GET() {
       unempMap, payemsMap, icsaMap, civpartMap,
       napmMap, indproMap, umcsentMap, rsxfsMap,
       t10y2yMap, t10y3mMap, cfnaiMap,
-      servicesConfMap, globalCompMap,
+      servicesConfMap, globalCompMap, usrecMap,
     ] = settled.map(getMap)
 
     // ── Inflation ───────────────────────────────────────────────────────
@@ -209,6 +233,9 @@ export async function GET() {
     // ── PMI / Business Activity ─────────────────────────────────────────
     const usServicesArr = mapToArray(servicesConfMap)
     const globalCompArr = mapToArray(globalCompMap)
+
+    // ── Recession Bands ─────────────────────────────────────────────────
+    const recessionBands = computeRecessionBands(usrecMap, '1995-01-01')
 
     const data: EconomicData = {
       inflation: {
@@ -309,6 +336,7 @@ export async function GET() {
           },
         },
       },
+      recessionBands,
     }
 
     return NextResponse.json(data, {
