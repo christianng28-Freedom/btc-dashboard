@@ -9,7 +9,7 @@ interface ServiceHealth {
 }
 
 interface HealthResponse {
-  binance: ServiceHealth
+  yahooFinance: ServiceHealth
   coingecko: ServiceHealth
   mempool: ServiceHealth
   timestamp: number
@@ -35,16 +35,16 @@ async function checkService(url: string): Promise<ServiceHealth> {
 }
 
 // GET /api/health
-// Check connectivity to Binance, CoinGecko, and Mempool.space
+// Check connectivity to Yahoo Finance, CoinGecko, and Mempool.space
 export async function GET() {
-  const [binance, coingecko, mempool] = await Promise.all([
-    checkService('https://api.binance.com/api/v3/ping'),
+  const [yahooFinance, coingecko, mempool] = await Promise.all([
+    checkService('https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=1d&interval=1d'),
     checkService('https://api.coingecko.com/api/v3/ping'),
     checkService('https://mempool.space/api/blocks/tip/height'),
   ])
 
   const response: HealthResponse = {
-    binance,
+    yahooFinance,
     coingecko,
     mempool,
     timestamp: Date.now(),

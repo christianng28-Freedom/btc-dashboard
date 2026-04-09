@@ -152,7 +152,7 @@ export async function GET() {
       stoxxR, daxR, ftseR,
       nkR, hsiR, shR, asxR,
       mstrR, maraR, riotR, coinR,
-      btcR,
+      btcR, btcYahooR,
     ] = await Promise.allSettled([
       // FRED — US indices + VIX
       fetchFREDSeries('SP500',      start2y, 3600),
@@ -177,6 +177,8 @@ export async function GET() {
       fetchYahooFinanceDaily('COIN', '2y'),
       // BTC price for correlation
       fetchKlines('BTCUSDT', '1d', 400),
+      // Yahoo Finance fallback for BTC (used when Binance is geo-blocked)
+      fetchYahooFinanceDaily('BTC-USD', '2y', 3600),
     ])
 
     const g = (r: PromiseSettledResult<Map<string, number>>): DataPoint[] =>
@@ -199,13 +201,18 @@ export async function GET() {
     const riotArr   = g(riotR)
     const coinArr   = g(coinR)
 
-    const btcHistory: DataPoint[] =
+    const btcFromBinance: DataPoint[] =
       btcR.status === 'fulfilled'
         ? btcR.value.map((k) => ({
             date:  new Date(k.openTime).toISOString().slice(0, 10),
             value: parseFloat(k.close),
           }))
         : []
+
+    const btcHistory: DataPoint[] =
+      btcFromBinance.length > 0
+        ? btcFromBinance
+        : g(btcYahooR)
 
     const btcMap    = new Map(btcHistory.map((p) => [p.date, p.value]))
     const vixLatest = vixArr.at(-1)?.value ?? 0

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchFREDLatest, fetchFREDSeries } from '@/lib/api/fred'
 import { fetchYahooFinanceDaily, fetchYahooFinanceQuote } from '@/lib/api/yahoo-finance'
-import { fetchStooqDaily } from '@/lib/api/stooq'
 
 export interface MarketSnap {
   price: number
@@ -167,6 +166,7 @@ export async function GET() {
       goldMap,
       sp500Quote,
       nasdaqQuote,
+      goldQuote,
       dxyQuote,
       btcRes,
       dfii10Obs,
@@ -186,9 +186,10 @@ export async function GET() {
       fetchFREDLatest('T10Y2Y', 2),
       fetchYahooFinanceDaily('^GSPC', '3mo', 300),
       fetchYahooFinanceDaily('^IXIC', '3mo', 300),
-      fetchStooqDaily('xauusd', 3600),
+      fetchYahooFinanceDaily('GC=F', '3mo', 300),
       fetchYahooFinanceQuote('^GSPC'),
       fetchYahooFinanceQuote('^IXIC'),
+      fetchYahooFinanceQuote('GC=F'),
       fetchYahooFinanceQuote('DX-Y.NYB'),
       fetch(
         'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily',
@@ -279,9 +280,8 @@ export async function GET() {
     const nasdaqSparkline = Array.from(nasdaqMap.entries()).slice(-31).map(([date, value]) => ({ date, value }))
     const goldEntries = Array.from(goldMap.entries()).slice(-31)
     const goldSparkline = goldEntries.map(([date, value]) => ({ date, value }))
-    const goldPrice = goldEntries[goldEntries.length - 1]?.[1] ?? 0
-    const goldPrevPrice = goldEntries[goldEntries.length - 2]?.[1] ?? goldPrice
-    const goldChange1d = goldPrevPrice > 0 ? ((goldPrice - goldPrevPrice) / goldPrevPrice) * 100 : 0
+    const goldPrice = goldQuote.price
+    const goldChange1d = goldQuote.changePercent
     const dgs10Sparkline = mapToSparkline(dgs10Map)
 
     // --- BTC sparkline ---
@@ -344,7 +344,7 @@ export async function GET() {
           sparkline: nasdaqSparkline,
         },
         gold: {
-          price: goldPrice,
+          price: Math.round(goldPrice * 100) / 100,
           changePercent: Math.round(goldChange1d * 10) / 10,
           sparkline: goldSparkline,
         },

@@ -93,7 +93,7 @@ export async function GET() {
       dxyR,
       eurR, jpyR, gbpR, audR,
       eurFredR, jpyFredR, gbpFredR, audFredR,
-      btcR,
+      btcR, btcYahooR,
     ] = await Promise.allSettled([
       // Yahoo Finance DX-Y.NYB = actual ICE DXY (~99), not FRED DTWEXBGS (~120)
       fetchYahooFinanceDaily('DX-Y.NYB', '2y', 3600),
@@ -109,6 +109,8 @@ export async function GET() {
       fetchFREDSeries('DEXUSAL', start2y, 3600),
       // BTC for overlay
       fetchKlines('BTCUSDT', '1d', 400),
+      // Yahoo Finance fallback for BTC (used when Binance is geo-blocked)
+      fetchYahooFinanceDaily('BTC-USD', '2y', 3600),
     ])
 
     function g(
@@ -136,13 +138,18 @@ export async function GET() {
     // 2-year lookback for DXY chart
     const dxyHistory = dxyArr.filter((p) => p.date >= start2y)
 
-    const btcHistory: DataPoint[] =
+    const btcFromBinance: DataPoint[] =
       btcR.status === 'fulfilled'
         ? btcR.value.map((k) => ({
             date:  new Date(k.openTime).toISOString().slice(0, 10),
             value: parseFloat(k.close),
           }))
         : []
+
+    const btcHistory: DataPoint[] =
+      btcFromBinance.length > 0
+        ? btcFromBinance
+        : (btcYahooR.status === 'fulfilled' ? mapToSorted(btcYahooR.value) : [])
 
     // FRED DEXJPUS is USD per JPY (inverted), Stooq usdjpy is JPY per USD
     // They differ — Stooq is standard convention; FRED DEXJPUS is ~0.0065

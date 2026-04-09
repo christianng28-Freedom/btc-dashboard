@@ -121,6 +121,7 @@ export async function GET() {
       btcR,
       goldYahooR, silverYahooR, platYahooR,
       wtiFredR, brentFredR, ngFredR, copperFredR, lumberYahooR,
+      btcYahooR,
     ] =
       await Promise.allSettled([
         fetchStooqDaily('xauusd'),
@@ -143,6 +144,8 @@ export async function GET() {
         fetchFREDSeries('PCOPPUSDM',    startStr, 86400),
         // Yahoo Finance fallback for lumber futures
         fetchYahooFinanceDaily('LBS=F', '5y', 3600),
+        // Yahoo Finance fallback for BTC (used when Binance is geo-blocked)
+        fetchYahooFinanceDaily('BTC-USD', '2y', 3600),
       ])
 
     let ppiArr: DataPoint[] = []
@@ -176,13 +179,18 @@ export async function GET() {
     // Lumber: try Stooq ls.f first, then Yahoo Finance LBS=F (already in USD/MBF)
     const lumberArr = withFallback(lumberStooqR, lumberYahooR)
 
-    const btcHistory: DataPoint[] =
+    const btcFromBinance: DataPoint[] =
       btcR.status === 'fulfilled'
         ? btcR.value.map((k) => ({
             date: new Date(k.openTime).toISOString().slice(0, 10),
             value: parseFloat(k.close),
           }))
         : []
+
+    const btcHistory: DataPoint[] =
+      btcFromBinance.length > 0
+        ? btcFromBinance
+        : g(btcYahooR)
 
     // Gold/Silver ratio (last 2 years)
     const silverMap = new Map(silverArr.map((p) => [p.date, p.value]))
