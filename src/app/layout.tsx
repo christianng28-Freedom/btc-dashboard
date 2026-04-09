@@ -4,6 +4,7 @@ import './globals.css'
 import { QueryProvider } from '@/providers/QueryProvider'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { WebSocketProvider } from '@/providers/WebSocketProvider'
+import { NotificationProvider } from '@/providers/NotificationProvider'
 import { TopBar } from '@/components/layout/TopBar'
 import { NavSidebar } from '@/components/layout/NavSidebar'
 import { MainArea } from '@/components/layout/MainArea'
@@ -58,13 +59,15 @@ export default function RootLayout({
         <QueryProvider>
           <ThemeProvider>
             <WebSocketProvider>
-              <div className="app-shell flex flex-col h-screen overflow-hidden">
-                <TopBar />
-                <div className="flex flex-1 overflow-hidden">
-                  <NavSidebar />
-                  <MainArea>{children}</MainArea>
+              <NotificationProvider>
+                <div className="app-shell flex flex-col h-screen overflow-hidden">
+                  <TopBar />
+                  <div className="flex flex-1 overflow-hidden">
+                    <NavSidebar />
+                    <MainArea>{children}</MainArea>
+                  </div>
                 </div>
-              </div>
+              </NotificationProvider>
             </WebSocketProvider>
           </ThemeProvider>
         </QueryProvider>

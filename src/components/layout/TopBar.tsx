@@ -1,8 +1,11 @@
 'use client'
+import { useState, useRef, useEffect } from 'react'
 import { usePrice } from '@/hooks/usePrice'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useIndices } from '@/hooks/useIndices'
+import { useNotifications } from '@/providers/NotificationProvider'
 import { formatPrice, formatChange } from '@/lib/format'
+import { NotificationPanel } from '@/components/layout/NotificationPanel'
 
 function formatIndex(n: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -115,10 +118,37 @@ function TickerCard({
   )
 }
 
+function BellIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  )
+}
+
 export function TopBar() {
   const { price, changePercent, isLoading } = usePrice()
   const { connectionStatus } = useWebSocket()
   const { data: indices, isLoading: indicesLoading } = useIndices()
+  const { lastFiredAt } = useNotifications()
+
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const bellRef = useRef<HTMLDivElement>(null)
+
+  // Close panel on click-outside
+  useEffect(() => {
+    if (!isPanelOpen) return
+    function handleMouseDown(e: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setIsPanelOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [isPanelOpen])
+
+  const hasRecentAlert = lastFiredAt !== null && Date.now() - lastFiredAt < 60 * 60_000
 
   const btcPositive = changePercent >= 0
   const btcPrice = isLoading || price === 0 ? '' : formatPrice(price)
@@ -168,7 +198,7 @@ export function TopBar() {
           style={{ background: 'linear-gradient(to left, #05070A 0%, transparent 100%)' }}
         />
         <div
-          className="flex items-center gap-2 overflow-x-auto lg:overflow-visible lg:justify-end w-full"
+          className="flex items-center gap-2 overflow-x-auto lg:overflow-visible justify-end w-full"
           style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
         >
           <TickerCard
@@ -234,6 +264,24 @@ export function TopBar() {
         <span className="hidden sm:block text-[10px] font-medium text-white/25 uppercase tracking-[0.14em]">
           {connectionStatus}
         </span>
+      </div>
+
+      {/* Subtle divider */}
+      <div className="w-px h-7 bg-white/[0.06] flex-shrink-0" />
+
+      {/* Bell notification button */}
+      <div className="relative flex-shrink-0" ref={bellRef}>
+        <button
+          onClick={() => setIsPanelOpen((v) => !v)}
+          className="relative flex items-center justify-center w-8 h-8 rounded-lg text-white/35 hover:text-white/65 hover:bg-white/[0.05] transition-colors duration-150"
+          aria-label="Notification settings"
+        >
+          <BellIcon />
+          {hasRecentAlert && (
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
+          )}
+        </button>
+        {isPanelOpen && <NotificationPanel onClose={() => setIsPanelOpen(false)} />}
       </div>
     </header>
   )
