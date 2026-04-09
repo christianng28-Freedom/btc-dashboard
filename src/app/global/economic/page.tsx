@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import {
   ComposedChart,
   AreaChart,
@@ -41,7 +42,9 @@ interface AreaSeriesProps {
   yDomain?: [number | 'auto', number | 'auto']
   referenceY?: number
   referenceLabel?: string
+  recessionBands?: Array<{ start: string; end: string }>
   source?: string
+  fredUrl?: string
   isLoading?: boolean
   isError?: boolean
 }
@@ -56,7 +59,9 @@ function AreaTimeChart({
   yDomain,
   referenceY,
   referenceLabel,
+  recessionBands,
   source,
+  fredUrl,
   isLoading,
   isError,
 }: AreaSeriesProps) {
@@ -73,8 +78,22 @@ function AreaTimeChart({
           <div className="text-[10px] font-mono text-[#444455]">{isError ? 'Failed to load data' : 'No data'}</div>
         </div>
       )
+    const allDates = data.map((p) => p.date)
+    const rev = [...allDates].reverse()
+    const preserve = new Set<string>()
+    const snappedBands = (recessionBands ?? [])
+      .map(({ start, end }) => {
+        const s = allDates.find((d) => d >= start) ?? allDates[0]
+        const e = rev.find((d) => d <= end)  // no fallback: if recession ended before dataset starts, skip it
+        if (!s || !e || s > e) return null
+        preserve.add(s); preserve.add(e)
+        return { start: s, end: e }
+      })
+      .filter(Boolean) as Array<{ start: string; end: string }>
     const step = Math.max(1, Math.floor(data.length / 200))
-    const thinned = data.filter((_, i) => i % step === 0 || i === data.length - 1)
+    const thinned = data.filter((p, i) =>
+      i % step === 0 || i === data.length - 1 || preserve.has(p.date)
+    )
     return (
       <ResponsiveContainer width="100%" height={height}>
         <AreaChart data={thinned} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
@@ -86,6 +105,9 @@ function AreaTimeChart({
           <Tooltip formatter={(v) => [formatY(v as number), title]}
             labelFormatter={(l) => l as string}
             contentStyle={CHART_TOOLTIP} labelStyle={{ color: '#666' }} />
+          {snappedBands.map(({ start, end }, i) => (
+            <ReferenceArea key={i} x1={start} x2={end} fill="#888888" fillOpacity={0.08} />
+          ))}
           {referenceY != null && (
             <ReferenceLine y={referenceY} stroke="#444455" strokeDasharray="4 4"
               label={{ value: referenceLabel ?? '', position: 'insideTopRight', fill: '#555566', fontSize: 9, fontFamily: 'monospace' }} />
@@ -99,7 +121,16 @@ function AreaTimeChart({
   return (
     <div className="bg-[#0d0d14] border border-[#1a1a2e] rounded-xl p-5 space-y-3">
       <div>
-        <div className="text-xs font-bold text-[#e0e0e0] font-mono">{title}</div>
+        <div className="flex items-center gap-1.5">
+          <div className="text-xs font-bold text-[#e0e0e0] font-mono">{title}</div>
+          {fredUrl && (
+            <a href={fredUrl} target="_blank" rel="noopener noreferrer" className="text-[#333344] hover:text-[#5555aa] transition-colors" title="View on FRED">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          )}
+        </div>
         {description && <div className="text-[10px] text-[#555566] font-mono">{description}</div>}
       </div>
       {body()}
@@ -112,11 +143,13 @@ function AreaTimeChart({
 interface YieldCurveProps {
   data10y2y: { date: string; value: number }[]
   data10y3m: { date: string; value: number }[]
+  recessionBands?: Array<{ start: string; end: string }>
   isLoading?: boolean
   isError?: boolean
 }
 
-function YieldCurveChart({ data10y2y, data10y3m, isLoading, isError }: YieldCurveProps) {
+function YieldCurveChart({ data10y2y, data10y3m, recessionBands, isLoading, isError }: YieldCurveProps) {
+  const fredUrl = 'https://fred.stlouisfed.org/series/T10Y2Y'
   const height = 220
 
   const body = () => {
@@ -138,14 +171,27 @@ function YieldCurveChart({ data10y2y, data10y3m, isLoading, isError }: YieldCurv
     const map2y  = new Map(data10y2y.map((p) => [p.date, p.value]))
     const map3m  = new Map(data10y3m.map((p) => [p.date, p.value]))
     const sorted = Array.from(dateSet).sort()
+    // Snap band boundaries to full date list, preserve them during thinning
+    const revSorted = [...sorted].reverse()
+    const ycPreserve = new Set<string>()
+    const snappedBands = (recessionBands ?? [])
+      .map(({ start, end }) => {
+        const s = sorted.find((d) => d >= start) ?? sorted[0]
+        const e = revSorted.find((d) => d <= end)  // no fallback: if recession ended before dataset starts, skip it
+        if (!s || !e || s > e) return null
+        ycPreserve.add(s); ycPreserve.add(e)
+        return { start: s, end: e }
+      })
+      .filter(Boolean) as Array<{ start: string; end: string }>
     const step   = Math.max(1, Math.floor(sorted.length / 300))
-    const merged = sorted
-      .filter((_, i) => i % step === 0 || i === sorted.length - 1)
-      .map((date) => ({
-        date,
-        '10Y-2Y': map2y.get(date),
-        '10Y-3M': map3m.get(date),
-      }))
+    const mergedDates = sorted.filter((d, i) =>
+      i % step === 0 || i === sorted.length - 1 || ycPreserve.has(d)
+    )
+    const merged = mergedDates.map((date) => ({
+      date,
+      '10Y-2Y': map2y.get(date),
+      '10Y-3M': map3m.get(date),
+    }))
 
     return (
       <ResponsiveContainer width="100%" height={height}>
@@ -160,6 +206,9 @@ function YieldCurveChart({ data10y2y, data10y3m, isLoading, isError }: YieldCurv
             labelFormatter={(l) => l as string}
             contentStyle={CHART_TOOLTIP} labelStyle={{ color: '#666' }} />
           <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace', color: '#555566' }} />
+          {snappedBands.map(({ start, end }, i) => (
+            <ReferenceArea key={i} x1={start} x2={end} fill="#888888" fillOpacity={0.08} />
+          ))}
           {/* Red shading for inversion zone */}
           <ReferenceArea y1={-5} y2={0} fill="#ef4444" fillOpacity={0.07} />
           <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3"
@@ -176,7 +225,14 @@ function YieldCurveChart({ data10y2y, data10y3m, isLoading, isError }: YieldCurv
   return (
     <div className="bg-[#0d0d14] border border-[#1a1a2e] rounded-xl p-5 space-y-3">
       <div>
-        <div className="text-xs font-bold text-[#e0e0e0] font-mono">Yield Curve Spreads</div>
+        <div className="flex items-center gap-1.5">
+          <div className="text-xs font-bold text-[#e0e0e0] font-mono">Yield Curve Spreads</div>
+          <a href={fredUrl} target="_blank" rel="noopener noreferrer" className="text-[#333344] hover:text-[#5555aa] transition-colors" title="View on FRED">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
         <div className="text-[10px] text-[#555566] font-mono">
           10Y-2Y and 10Y-3M Treasury spreads — inversion (below zero) historically precedes recession
         </div>
@@ -204,8 +260,27 @@ function SectionHeader({ title, description }: { title: string; description?: st
 
 // ── page ───────────────────────────────────────────────────────────────────
 
+type Range = '6M' | '1Y' | '5Y' | '10Y' | '20Y' | '30Y'
+const RANGES: Range[] = ['6M', '1Y', '5Y', '10Y', '20Y', '30Y']
+const RANGE_MONTHS: Record<Range, number> = { '6M': 6, '1Y': 12, '5Y': 60, '10Y': 120, '20Y': 240, '30Y': 360 }
+
+function getCutoff(range: Range): string {
+  const d = new Date()
+  d.setMonth(d.getMonth() - RANGE_MONTHS[range])
+  return d.toISOString().slice(0, 10)
+}
+
 export default function EconomicIndicatorsPage() {
   const { data, isLoading, isError } = useEconomicData()
+  const [range, setRange] = useState<Range>('10Y')
+
+  const cutoff = getCutoff(range)
+  const f = (arr: { date: string; value: number }[] | undefined) =>
+    (arr ?? []).filter((p) => p.date >= cutoff)
+
+  const recessionBands = (data?.recessionBands ?? []).filter(
+    (b) => b.end >= cutoff
+  )
 
   const inf  = data?.inflation
   const emp  = data?.employment
@@ -378,11 +453,28 @@ export default function EconomicIndicatorsPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-10">
 
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#e0e0e0]">Economic Indicators</h1>
-        <p className="text-sm text-[#666] mt-0.5">
-          Inflation, employment, output & leading signals — US macro via FRED
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#e0e0e0]">Economic Indicators</h1>
+          <p className="text-sm text-[#666] mt-0.5">
+            Inflation, employment, output &amp; leading signals — US macro via FRED
+          </p>
+        </div>
+        <div className="flex gap-0.5 bg-[#080810] border border-[#1a1a2e] rounded-xl p-1.5 shadow-inner">
+          {RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-3 py-1.5 text-[10px] font-mono font-bold rounded-lg transition-all duration-150 ${
+                range === r
+                  ? 'bg-[#3b82f6] text-white shadow-md shadow-blue-900/40'
+                  : 'text-[#3d3d55] hover:text-[#7070a0] hover:bg-[#0f0f1a]'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Inflation ──────────────────────────────────────────────────── */}
@@ -395,15 +487,17 @@ export default function EconomicIndicatorsPage() {
         <FREDTimeSeriesChart
           title="Inflation — Year-over-Year %"
           description="CPI, Core CPI, Core PCE, PPI — monthly YoY % change"
+          fredUrl="https://fred.stlouisfed.org/series/CPIAUCSL"
           height={240}
           series={[
-            { key: 'cpi',     label: 'CPI',      color: '#3b82f6', data: inf?.cpiYoY     ?? [] },
-            { key: 'coreCpi', label: 'Core CPI',  color: '#10b981', data: inf?.coreCpiYoY ?? [] },
-            { key: 'corePce', label: 'Core PCE',  color: '#f59e0b', data: inf?.corePceYoY ?? [] },
-            { key: 'ppi',     label: 'PPI',       color: '#8b5cf6', data: inf?.ppiYoY     ?? [] },
+            { key: 'cpi',     label: 'CPI',      color: '#3b82f6', data: f(inf?.cpiYoY)     },
+            { key: 'coreCpi', label: 'Core CPI',  color: '#10b981', data: f(inf?.coreCpiYoY) },
+            { key: 'corePce', label: 'Core PCE',  color: '#f59e0b', data: f(inf?.corePceYoY) },
+            { key: 'ppi',     label: 'PPI',       color: '#8b5cf6', data: f(inf?.ppiYoY)     },
           ]}
           formatY={(v) => `${v.toFixed(1)}%`}
           referenceLines={[{ y: 2, label: '2% target', color: '#ef4444' }]}
+          recessionBands={recessionBands}
           source="FRED: CPIAUCSL, CPILFESL, PCEPILFE, PPIACO"
           isLoading={isLoading}
           isError={isError}
@@ -421,34 +515,40 @@ export default function EconomicIndicatorsPage() {
           <AreaTimeChart
             title="Unemployment Rate"
             description="Seasonally adjusted — ~4% considered natural rate"
-            data={emp?.unemployment ?? []}
+            data={f(emp?.unemployment)}
             color="#3b82f6"
             formatY={(v) => `${v}%`}
             referenceY={4}
             referenceLabel="4% natural"
+            recessionBands={recessionBands}
             source="FRED: UNRATE"
+            fredUrl="https://fred.stlouisfed.org/series/UNRATE"
             isLoading={isLoading}
             isError={isError}
           />
           <FREDBarChart
             title="Nonfarm Payrolls MoM"
             description="Monthly change in total nonfarm employment (thousands)"
-            data={emp?.nfpMoM ?? []}
+            data={f(emp?.nfpMoM)}
             formatY={(v) => `${v >= 0 ? '+' : ''}${v.toLocaleString()}K`}
             referenceLines={[{ y: 0, label: '' }]}
+            recessionBands={recessionBands}
             source="FRED: PAYEMS"
+            fredUrl="https://fred.stlouisfed.org/series/PAYEMS"
             isLoading={isLoading}
             isError={isError}
           />
           <FREDTimeSeriesChart
             title="Initial Jobless Claims"
             description="Weekly initial unemployment claims (thousands) + 4-week moving average"
+            fredUrl="https://fred.stlouisfed.org/series/ICSA"
             height={200}
             series={[
-              { key: 'claims', label: 'Claims', color: '#ef4444', data: emp?.initialClaims ?? [] },
-              { key: 'ma4',    label: '4W MA',  color: '#f59e0b', data: emp?.initialClaimsMA4 ?? [] },
+              { key: 'claims', label: 'Claims', color: '#ef4444', data: f(emp?.initialClaims)    },
+              { key: 'ma4',    label: '4W MA',  color: '#f59e0b', data: f(emp?.initialClaimsMA4) },
             ]}
             formatY={(v) => `${v.toLocaleString()}K`}
+            recessionBands={recessionBands}
             source="FRED: ICSA"
             isLoading={isLoading}
             isError={isError}
@@ -456,10 +556,12 @@ export default function EconomicIndicatorsPage() {
           <AreaTimeChart
             title="Labor Force Participation Rate"
             description="Share of civilian non-institutional population in labor force"
-            data={emp?.lfpr ?? []}
+            data={f(emp?.lfpr)}
             color="#10b981"
             formatY={(v) => `${v}%`}
+            recessionBands={recessionBands}
             source="FRED: CIVPART"
+            fredUrl="https://fred.stlouisfed.org/series/CIVPART"
             isLoading={isLoading}
             isError={isError}
           />
@@ -477,12 +579,14 @@ export default function EconomicIndicatorsPage() {
           <FREDTimeSeriesChart
             title="OECD Mfg Business Confidence"
             description="OECD Business Tendency Survey — above 0 = positive sentiment, below 0 = negative"
+            fredUrl="https://fred.stlouisfed.org/series/BSCICP02USM460S"
             height={200}
             series={[
-              { key: 'ism', label: 'Mfg Confidence', color: '#3b82f6', data: out?.ismPmi ?? [] },
+              { key: 'ism', label: 'Mfg Confidence', color: '#3b82f6', data: f(out?.ismPmi) },
             ]}
             formatY={(v) => v.toFixed(1)}
             referenceLines={[{ y: 0, label: '0 neutral', color: '#22c55e' }]}
+            recessionBands={recessionBands}
             source="FRED: BSCICP02USM460S"
             isLoading={isLoading}
             isError={isError}
@@ -490,23 +594,27 @@ export default function EconomicIndicatorsPage() {
           <AreaTimeChart
             title="Industrial Production YoY"
             description="Year-over-year % change in industrial output index"
-            data={out?.industrialProdYoY ?? []}
+            data={f(out?.industrialProdYoY)}
             color="#8b5cf6"
             formatY={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
             referenceY={0}
             referenceLabel=""
+            recessionBands={recessionBands}
             source="FRED: INDPRO"
+            fredUrl="https://fred.stlouisfed.org/series/INDPRO"
             isLoading={isLoading}
             isError={isError}
           />
           <FREDTimeSeriesChart
             title="Michigan Consumer Sentiment"
             description="University of Michigan survey — index of consumer confidence"
+            fredUrl="https://fred.stlouisfed.org/series/UMCSENT"
             height={200}
             series={[
-              { key: 'michigan', label: 'Michigan Sentiment', color: '#f59e0b', data: out?.michiganSentiment ?? [] },
+              { key: 'michigan', label: 'Michigan Sentiment', color: '#f59e0b', data: f(out?.michiganSentiment) },
             ]}
             formatY={(v) => v.toFixed(1)}
+            recessionBands={recessionBands}
             source="FRED: UMCSENT"
             isLoading={isLoading}
             isError={isError}
@@ -514,10 +622,12 @@ export default function EconomicIndicatorsPage() {
           <FREDBarChart
             title="Retail Sales MoM"
             description="Advance retail sales month-over-month % change"
-            data={out?.retailSalesMoM ?? []}
+            data={f(out?.retailSalesMoM)}
             formatY={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
             referenceLines={[{ y: 0, label: '' }]}
+            recessionBands={recessionBands}
             source="FRED: RSXFS"
+            fredUrl="https://fred.stlouisfed.org/series/RSXFS"
             isLoading={isLoading}
             isError={isError}
           />
@@ -537,12 +647,14 @@ export default function EconomicIndicatorsPage() {
         <FREDTimeSeriesChart
           title="US Manufacturing Business Confidence (OECD)"
           description="OECD Business Tendency Survey — 0-centered scale. Above 0 = expanding, below 0 = contracting. Free proxy for ISM Manufacturing PMI."
+          fredUrl="https://fred.stlouisfed.org/series/BSCICP02USM460S"
           height={220}
           series={[
-            { key: 'mfg', label: 'US Mfg Confidence', color: '#3b82f6', data: pmi?.usManufacturing ?? [] },
+            { key: 'mfg', label: 'US Mfg Confidence', color: '#3b82f6', data: f(pmi?.usManufacturing) },
           ]}
           formatY={(v) => v.toFixed(1)}
           referenceLines={[{ y: 0, label: '0 neutral', color: '#555566' }]}
+          recessionBands={recessionBands}
           source="FRED: BSCICP02USM460S (OECD Business Tendency Survey)"
           isLoading={isLoading}
           isError={isError}
@@ -599,15 +711,16 @@ export default function EconomicIndicatorsPage() {
         <MetricHeatmapStrip metrics={leadingMetrics} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <YieldCurveChart
-            data10y2y={lead?.yieldCurve10y2y ?? []}
-            data10y3m={lead?.yieldCurve10y3m ?? []}
+            data10y2y={f(lead?.yieldCurve10y2y)}
+            data10y3m={f(lead?.yieldCurve10y3m)}
+            recessionBands={recessionBands}
             isLoading={isLoading}
             isError={isError}
           />
           <FREDBarChart
             title="Chicago Fed National Activity Index (CFNAI)"
             description="Above 0 = above-trend growth. Below −0.7 over 3 months signals possible recession."
-            data={lead?.cfnai ?? []}
+            data={f(lead?.cfnai)}
             height={220}
             formatY={(v) => v.toFixed(2)}
             referenceLines={[
@@ -616,7 +729,9 @@ export default function EconomicIndicatorsPage() {
             ]}
             positiveColor="#22c55e"
             negativeColor="#ef4444"
+            recessionBands={recessionBands}
             source="FRED: CFNAI"
+            fredUrl="https://fred.stlouisfed.org/series/CFNAI"
             isLoading={isLoading}
             isError={isError}
           />
