@@ -252,7 +252,7 @@ export function KellyInputPanel({
           <NumericInput
             value={portfolioSize}
             onChange={onPortfolioSizeChange}
-            step={10000}
+            step={50000}
             min={100}
             max={100000000}
             prefix="$"
