@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   AreaChart,
   Area,
@@ -742,10 +743,30 @@ function CreditGrowthChart({
   )
 }
 
+// ── Date range selector ────────────────────────────────────────────────────
+
+type Range = '6M' | '1Y' | '5Y' | '10Y' | '15Y'
+const RANGES: Range[] = ['6M', '1Y', '5Y', '10Y', '15Y']
+
+function cutoff(r: Range): string {
+  const d = new Date()
+  if (r === '6M')  d.setMonth(d.getMonth() - 6)
+  if (r === '1Y')  d.setFullYear(d.getFullYear() - 1)
+  if (r === '5Y')  d.setFullYear(d.getFullYear() - 5)
+  if (r === '10Y') d.setFullYear(d.getFullYear() - 10)
+  if (r === '15Y') d.setFullYear(d.getFullYear() - 15)
+  return d.toISOString().slice(0, 10)
+}
+
 // ── PAGE ───────────────────────────────────────────────────────────────────
 
 export default function LiquidityPage() {
   const { data, isLoading, isError } = useLiquidityData()
+  const [range, setRange] = useState<Range>('5Y')
+  const cut = cutoff(range)
+
+  // ── filtered data (client-side, no re-fetch) ──────────────────────────
+  const f = <T extends { date: string }>(arr: T[]) => arr.filter((p) => p.date >= cut)
 
   const nl     = data?.netLiquidity.latest
   const fbLatest  = data?.fedBalance.total.at(-1)?.value ?? 0
@@ -823,6 +844,23 @@ export default function LiquidityPage() {
       {/* Metric strip */}
       <MetricHeatmapStrip metrics={metrics} />
 
+      {/* ── Date range selector ───────────────────────────────────────── */}
+      <div className="flex items-center gap-1">
+        {RANGES.map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`px-2.5 py-1 text-xs font-medium font-mono rounded transition-colors ${
+              range === r
+                ? 'bg-[#3b82f6] text-white'
+                : 'text-[#999999] hover:text-[#e0e0e0] hover:bg-[#1a1a2e]'
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+
       {/* ── US NET LIQUIDITY ──────────────────────────────────────────── */}
       <section>
         <SectionTitle
@@ -831,13 +869,13 @@ export default function LiquidityPage() {
         />
         <div className="space-y-4">
           <NetLiquidityChart
-            history={data?.netLiquidity.history    ?? []}
-            btcHistory={data?.btcHistory           ?? []}
+            history={f(data?.netLiquidity.history    ?? [])}
+            btcHistory={f(data?.btcHistory           ?? [])}
             isLoading={isLoading}
             isError={!!isError}
           />
           <NetLiquidityComponents
-            history={data?.netLiquidity.history ?? []}
+            history={f(data?.netLiquidity.history ?? [])}
             isLoading={isLoading}
             isError={!!isError}
           />
@@ -851,9 +889,9 @@ export default function LiquidityPage() {
           subtitle="Total Assets, Treasuries held outright &amp; Mortgage-Backed Securities — QE/QT phases annotated"
         />
         <FedBalanceChart
-          total={data?.fedBalance.total           ?? []}
-          treasuries={data?.fedBalance.treasuries ?? []}
-          mbs={data?.fedBalance.mbs               ?? []}
+          total={f(data?.fedBalance.total           ?? [])}
+          treasuries={f(data?.fedBalance.treasuries ?? [])}
+          mbs={f(data?.fedBalance.mbs               ?? [])}
           isLoading={isLoading}
           isError={!!isError}
         />
@@ -867,12 +905,12 @@ export default function LiquidityPage() {
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <RrpAreaChart
-            data={data?.rrp     ?? []}
+            data={f(data?.rrp ?? [])}
             isLoading={isLoading}
             isError={!!isError}
           />
           <TgaAreaChart
-            data={data?.tga     ?? []}
+            data={f(data?.tga ?? [])}
             isLoading={isLoading}
             isError={!!isError}
           />
@@ -887,19 +925,19 @@ export default function LiquidityPage() {
         />
         <div className="space-y-4">
           <GlobalM2IndexedChart
-            usIndexed={data?.globalM2.usIndexed ?? []}
-            euIndexed={data?.globalM2.euIndexed ?? []}
-            jpIndexed={data?.globalM2.jpIndexed ?? []}
-            cnIndexed={data?.globalM2.cnIndexed ?? []}
+            usIndexed={f(data?.globalM2.usIndexed ?? [])}
+            euIndexed={f(data?.globalM2.euIndexed ?? [])}
+            jpIndexed={f(data?.globalM2.jpIndexed ?? [])}
+            cnIndexed={f(data?.globalM2.cnIndexed ?? [])}
             isLoading={isLoading}
             isError={!!isError}
           />
           <GlobalM2YoYChart
-            usYoY={data?.globalM2.usYoY      ?? []}
-            euYoY={data?.globalM2.euYoY      ?? []}
-            jpYoY={data?.globalM2.jpYoY      ?? []}
-            cnYoY={data?.globalM2.cnYoY      ?? []}
-            btcHistory={data?.btcHistory     ?? []}
+            usYoY={f(data?.globalM2.usYoY  ?? [])}
+            euYoY={f(data?.globalM2.euYoY  ?? [])}
+            jpYoY={f(data?.globalM2.jpYoY  ?? [])}
+            cnYoY={f(data?.globalM2.cnYoY  ?? [])}
+            btcHistory={f(data?.btcHistory  ?? [])}
             isLoading={isLoading}
             isError={!!isError}
           />
@@ -913,10 +951,10 @@ export default function LiquidityPage() {
           subtitle="Total Bank Credit &amp; Commercial &amp; Industrial Loans — absolute levels and YoY % change"
         />
         <CreditGrowthChart
-          totalBankCredit={data?.creditGrowth.totalBankCredit ?? []}
-          businessLoans={data?.creditGrowth.businessLoans     ?? []}
-          totalYoY={data?.creditGrowth.totalYoY               ?? []}
-          businessYoY={data?.creditGrowth.businessYoY         ?? []}
+          totalBankCredit={f(data?.creditGrowth.totalBankCredit ?? [])}
+          businessLoans={f(data?.creditGrowth.businessLoans     ?? [])}
+          totalYoY={f(data?.creditGrowth.totalYoY               ?? [])}
+          businessYoY={f(data?.creditGrowth.businessYoY         ?? [])}
           isLoading={isLoading}
           isError={!!isError}
         />

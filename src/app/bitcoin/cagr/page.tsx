@@ -89,6 +89,7 @@ interface NumericInputProps {
   className?: string
   decimals?: number
   placeholder?: string
+  commas?: boolean
 }
 
 function NumericInput({
@@ -102,11 +103,13 @@ function NumericInput({
   className = '',
   decimals,
   placeholder,
+  commas,
 }: NumericInputProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timeoutRef  = useRef<ReturnType<typeof setTimeout>  | null>(null)
   const liveValue   = useRef(value)
   liveValue.current = value
+  const [focused, setFocused] = useState(false)
 
   function clamp(v: number) { return Math.min(max, Math.max(min, v)) }
 
@@ -134,11 +137,16 @@ function NumericInput({
         </span>
       )}
       <input
-        type="number"
-        value={decimals !== undefined ? value.toFixed(decimals) : value}
+        type={commas && !focused ? 'text' : 'number'}
+        value={commas && !focused
+          ? (decimals !== undefined ? value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : value.toLocaleString('en-US'))
+          : (decimals !== undefined ? value.toFixed(decimals) : value)}
         placeholder={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onChange={e => {
-          const raw = decimals !== undefined ? parseFloat(e.target.value) : parseInt(e.target.value, 10)
+          const cleaned = commas ? e.target.value.replace(/,/g, '') : e.target.value
+          const raw = decimals !== undefined ? parseFloat(cleaned) : parseInt(cleaned, 10)
           if (!isNaN(raw)) onChange(clamp(raw))
         }}
         className={`flex-1 min-w-0 bg-transparent py-2.5 text-[14px] font-semibold text-white focus:outline-none
@@ -429,6 +437,7 @@ export default function CagrPage() {
               step={500}
               min={1}
               prefix="$"
+              commas
               accentColor="#34d399"
               className="w-full"
             />
@@ -470,7 +479,7 @@ export default function CagrPage() {
               onChange={v => setBtcHoldings(Math.max(0.001, v))}
               step={0.1}
               min={0.001}
-              decimals={3}
+              decimals={2}
               accentColor="#34d399"
               className="w-full"
             />
@@ -677,7 +686,7 @@ export default function CagrPage() {
                           </div>
                           <div className="text-[11px] text-white/50">
                             <span className="text-white/30">BTC #</span>{' '}
-                            <span className="text-white font-semibold">{btcHoldings}</span>
+                            <span className="text-white font-semibold">{typeof btcHoldings === 'number' ? btcHoldings.toFixed(2) : Number(btcHoldings).toFixed(2)}</span>
                           </div>
                           <div className="text-[11px] text-white/50">
                             <span className="text-white/30">BTC Total</span>{' '}

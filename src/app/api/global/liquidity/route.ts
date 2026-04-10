@@ -120,11 +120,8 @@ function indexTo100(sorted: DataPoint[]): DataPoint[] {
 // ── route ──────────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const now    = new Date()
-  const d5y    = new Date(now); d5y.setFullYear(d5y.getFullYear() - 5)
-  const d6y    = new Date(now); d6y.setFullYear(d6y.getFullYear() - 6)
-  const start5 = d5y.toISOString().slice(0, 10)
-  const start6 = d6y.toISOString().slice(0, 10)
+  const start5 = '2009-01-01'  // BTC genesis era — covers full 15+ year history
+  const start6 = '2008-01-01'  // extra year back for accurate YoY calculations
 
   try {
     const [
@@ -150,7 +147,7 @@ export async function GET() {
       fetchFREDSeries('TOTBKCR',          start5, 3600),  // Total bank credit, billions USD
       fetchFREDSeries('BUSLOANS',         start5, 3600),  // C&I loans, billions USD
       // BTC weekly ~5y via CryptoCompare (works on Vercel; Binance klines are geo-blocked)
-      fetchBtcWeekly(300),
+      fetchBtcWeekly(800),
     ])
 
     const g = (r: PromiseSettledResult<Map<string, number>>): DataPoint[] =>
