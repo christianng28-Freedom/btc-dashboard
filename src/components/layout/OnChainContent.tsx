@@ -133,27 +133,41 @@ function CheckOnChainIframe({ src, title }: { src: string; title: string }) {
     return () => obs.disconnect()
   }, [])
 
+  // Derive a short label from the title (strip " – CheckOnChain" suffix)
+  const label = title.replace(/\s*[–—-]\s*CheckOnChain$/i, '')
+
   return (
-    <div
-      ref={wrapperRef}
-      className="w-full rounded-lg overflow-hidden border border-[#1a1a2e]"
-      style={{ height: Math.round(NATIVE_H * scale), background: '#ffffff' }}
-    >
-      <iframe
-        src={src}
-        title={title}
-        loading="eager"
-        scrolling="no"
-        style={{
-          width: NATIVE_W,
-          height: NATIVE_H,
-          border: 'none',
-          display: 'block',
-          colorScheme: 'light',
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-        }}
-      />
+    <div className="flex flex-col gap-1">
+      <div
+        ref={wrapperRef}
+        className="w-full rounded-lg overflow-hidden border border-[#1a1a2e]"
+        style={{ height: Math.round(NATIVE_H * scale), background: '#ffffff' }}
+      >
+        <iframe
+          src={src}
+          title={title}
+          loading="eager"
+          scrolling="no"
+          style={{
+            width: NATIVE_W,
+            height: NATIVE_H,
+            border: 'none',
+            display: 'block',
+            colorScheme: 'light',
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+          }}
+        />
+      </div>
+      <a
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="self-end text-[10px] text-[#444] hover:text-[#888] transition-colors leading-none"
+        title={`Open ${label} on CheckOnChain`}
+      >
+        checkonchain.com ↗
+      </a>
     </div>
   )
 }
@@ -161,10 +175,12 @@ function CheckOnChainIframe({ src, title }: { src: string; title: string }) {
 export function OnChainContent() {
   return (
     <div className="space-y-10">
-      <ModuleHeader
-        title="On-Chain Analysis"
-        description="Bitcoin on-chain metrics and network fundamentals."
-      />
+      <div className="-mb-6">
+        <ModuleHeader
+          title="On-Chain Analysis"
+          description="Bitcoin on-chain metrics and network fundamentals."
+        />
+      </div>
 
       <SectionNav />
 
