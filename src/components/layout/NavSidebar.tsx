@@ -16,6 +16,26 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
+    label: 'Daily Brief',
+    items: [
+      {
+        href: '/morning-brief',
+        label: 'Morning Brief',
+        exactMatch: true,
+        icon: (
+          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M3 18h18M5.636 13.364a6 6 0 1112.728 0M12 3v2m0 13v.01M4.222 5.636l1.414 1.414m12.728 0l1.414-1.414"
+            />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
     label: 'Global Outlook',
     items: [
       {

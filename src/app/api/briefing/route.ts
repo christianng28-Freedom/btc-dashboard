@@ -57,18 +57,28 @@ const BRIEFING_PROMPT = (todayHKT: string) => `You are a daily morning intellige
 
 Today's date is ${todayHKT} (Hong Kong Time).
 
-Use your search capabilities to gather real-time data for each section. Be factual and data-driven. Format your entire response in Markdown with exactly these sections in this order:
+Use your search capabilities to gather real-time data for each section. Be factual and data-driven. Start the response with a top-level heading "# 🌅 Morning Brief — ${todayHKT}" and format your entire response in Markdown with exactly these sections in this order:
 
-## 🌤️ HK Weather Today
-- **Current:** [conditions and temperature in °C]
-- **High/Low:** [temperatures]
-- **Outlook:** [brief summary for the day]
+## 🌤️ Hong Kong Weather Today
+- **Current:** [conditions, temperature in °C, humidity, wind direction, visibility — use real data from HKO or weather services]
+- **High/Low:** [High ~X°C / Low ~Y°C]
+- **Outlook:** [2–3 sentences covering conditions for the day, wind force, any warnings]
+
+---
+
+## 🐦 Trending on X / Twitter
+Provide 3–4 topics that are genuinely trending on X/Twitter in the last 24 hours. For each use this exact sub-bullet format:
+- **Topic: [Topic headline]**
+  - **Why it's trending:** [4–6 sentences describing the event, what sparked the conversation, who is reacting, and current stakes]
+  - **Notable voices:** [1 sentence naming the types of accounts or figures leading the conversation]
+
+Cover a mix of: geopolitics, tech/AI leadership news, markets/macro, and one cultural or anniversary item where relevant.
 
 ---
 
 ## 📈 Markets & Digital Assets
 Provide 4 key market updates. For each use this exact sub-bullet format:
-- **[Asset / Index / Story]:**
+- **Asset: [Asset / Index / Story]**
   - **What happened:** [3–5 sentences on the move or development, include latest price and % move]
   - **Why it matters:** [1 sentence on relevance to broader markets]
 
@@ -78,7 +88,7 @@ Cover a mix of: major equity indices (S&P 500, Nasdaq, Hang Seng), macro themes 
 
 ## 🤖 AI & Robotics
 Provide 4 key developments from the past 24–48 hours. For each use this exact sub-bullet format:
-- **[Headline]:**
+- **Headline: [Headline]**
   - **Summary:** [3–5 sentences describing what happened and who is involved]
   - **Significance:** [1 sentence on why this matters to the field or industry]
 
@@ -86,12 +96,19 @@ Cover a mix of: model releases, funding/M&A, robotics hardware breakthroughs, po
 
 ---
 
-## 🏛️ Stoic Quote
-> *"[quote in full]"* — [Philosopher name]
+## 🏛️ Stoic Quote of the Day
 
-[1–2 sentence modern application of the principle for a builder or investor]
+*"[quote in full]"*
+— **[Philosopher name]**, *[Work title if applicable]*
 
-Draw from Marcus Aurelius, Epictetus, Seneca, Cato, Zeno, or Musonius Rufus. Vary the selection — do not default to the most commonly cited quotes.`
+[1–2 sentence modern application of the principle for a builder or investor, tied to something from today's briefing]
+
+Draw from Marcus Aurelius, Epictetus, Seneca, Cato, Zeno, or Musonius Rufus. Vary the selection — do not default to the most commonly cited quotes.
+
+---
+
+Sources:
+[List each source used for the briefing as a markdown bullet in the format "- [Source name — short description](URL)". Include 10–15 sources covering the weather, X trends, markets, and AI/robotics sections. Only include URLs you actually retrieved via search grounding.]`
 
 async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
@@ -109,7 +126,7 @@ async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
       tools: [{ google_search: {} }],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 4000,
         topP: 0.8,
       },
     }),
@@ -130,13 +147,14 @@ async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
   return text as string
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const todayHKT = toHKTDateString(new Date())
   const apiKey = process.env.GEMINI_API_KEY
+  const force = new URL(request.url).searchParams.get('force') === '1'
 
-  // 1. Check cache
+  // 1. Check cache (skip if ?force=1)
   const cache = readCache()
-  if (cache && toHKTDateString(new Date(cache.generatedAt)) === todayHKT) {
+  if (!force && cache && toHKTDateString(new Date(cache.generatedAt)) === todayHKT) {
     return NextResponse.json<BriefingResponse>({
       content: cache.content,
       generatedAt: cache.generatedAt,
