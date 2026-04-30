@@ -46,7 +46,7 @@ function writeCache(content: string): void {
 }
 
 const FALLBACK_CONTENT = `## ⚠️ Briefing Unavailable
-- Unable to generate morning briefing. Check that GEMINI_API_KEY is set in your environment and try refreshing.
+- Unable to generate morning briefing. Check that GEMINI_API_KEY is set in your environment and try refreshing. If the issue persists, the gemini-3-flash-preview model may be unavailable — revert to gemini-2.5-flash in the API route.
 
 ---
 
@@ -111,7 +111,7 @@ Sources:
 [List each source used for the briefing as a markdown bullet in the format "- [Source name — short description](URL)". Include 10–15 sources covering the weather, X trends, markets, and AI/robotics sections. Only include URLs you actually retrieved via search grounding.]`
 
 async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
 
   const res = await fetch(url, {
     method: 'POST',
