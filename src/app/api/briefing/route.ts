@@ -5,7 +5,8 @@ import { join } from 'path'
 // Always run dynamically — never statically cache at build time
 export const dynamic = 'force-dynamic'
 
-const CACHE_PATH = join(process.cwd(), 'src/data/morning-briefing.json')
+// Vercel's serverless filesystem is read-only except /tmp
+const CACHE_PATH = process.env.VERCEL ? '/tmp/morning-briefing.json' : join(process.cwd(), 'src/data/morning-briefing.json')
 
 interface BriefingCache {
   generatedAt: string  // ISO UTC string
@@ -46,7 +47,7 @@ function writeCache(content: string): void {
 }
 
 const FALLBACK_CONTENT = `## ⚠️ Briefing Unavailable
-- Unable to generate morning briefing. Check that GEMINI_API_KEY is set in your environment and try refreshing. If the issue persists, the gemini-3-flash-preview model may be unavailable — revert to gemini-2.5-flash in the API route.
+- Unable to generate morning briefing. Check that GEMINI_API_KEY is set in your Vercel environment variables and try regenerating.
 
 ---
 
@@ -111,7 +112,7 @@ Sources:
 [List each source used for the briefing as a markdown bullet in the format "- [Source name — short description](URL)". Include 10–15 sources covering the weather, X trends, markets, and AI/robotics sections. Only include URLs you actually retrieved via search grounding.]`
 
 async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
 
   const res = await fetch(url, {
     method: 'POST',
