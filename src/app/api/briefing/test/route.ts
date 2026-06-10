@@ -18,7 +18,7 @@ export async function GET() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: 'Say "API key works" in 5 words.' }] }],
-        generationConfig: { temperature: 0, maxOutputTokens: 20 },
+        generationConfig: { temperature: 0, maxOutputTokens: 50, thinkingConfig: { thinkingBudget: 0 } },
       }),
     })
 

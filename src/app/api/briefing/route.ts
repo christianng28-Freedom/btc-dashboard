@@ -4,6 +4,9 @@ import { join } from 'path'
 
 // Always run dynamically — never statically cache at build time
 export const dynamic = 'force-dynamic'
+// Grounded generation takes 20-50s per attempt and 503 responses can take 45s+
+// before failing, so a full retry cycle needs well over the 60s default
+export const maxDuration = 300
 
 // Vercel's serverless filesystem is read-only except /tmp
 const CACHE_PATH = process.env.VERCEL ? '/tmp/morning-briefing.json' : join(process.cwd(), 'src/data/morning-briefing.json')
@@ -46,8 +49,16 @@ function writeCache(content: string): void {
   }
 }
 
+const MISSING_KEY_CONTENT = `## ⚠️ Briefing Unavailable
+- GEMINI_API_KEY is not set. Add it in your Vercel environment variables and redeploy.
+
+---
+
+## 🏛️ Stoic Quote
+> *"You have power over your mind, not outside events. Realize this and you will find strength."* — Marcus Aurelius`
+
 const FALLBACK_CONTENT = `## ⚠️ Briefing Unavailable
-- Unable to generate morning briefing. Check that GEMINI_API_KEY is set in your Vercel environment variables and try regenerating.
+- The Gemini API is temporarily unavailable (likely high demand or a timeout). This usually resolves within a few minutes — hit Regenerate to retry.
 
 ---
 
@@ -111,7 +122,7 @@ Draw from Marcus Aurelius, Epictetus, Seneca, Cato, Zeno, or Musonius Rufus. Var
 Sources:
 [List each source used for the briefing as a markdown bullet in the format "- [Source name — short description](URL)". Include 10–15 sources covering the weather, X trends, markets, and AI/robotics sections. Only include URLs you actually retrieved via search grounding.]`
 
-async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
+async function callGeminiOnce(apiKey: string, todayHKT: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
 
   const res = await fetch(url, {
@@ -127,8 +138,11 @@ async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
       tools: [{ google_search: {} }],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 4000,
+        // gemini-2.5-flash is a thinking model: thinking tokens count against
+        // this budget (~1.7k observed), so 4000 left no room for the briefing
+        maxOutputTokens: 16384,
         topP: 0.8,
+        thinkingConfig: { thinkingBudget: 2048 },
       },
     }),
   })
@@ -136,7 +150,9 @@ async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
   if (!res.ok) {
     const errText = await res.text()
     console.error(`[/api/briefing] Gemini HTTP ${res.status}:`, errText)
-    throw new Error(`Gemini ${res.status}: ${errText}`)
+    const err = new Error(`Gemini ${res.status}: ${errText}`)
+    ;(err as Error & { retryable?: boolean }).retryable = res.status === 429 || res.status >= 500
+    throw err
   }
 
   const json = await res.json()
@@ -146,6 +162,24 @@ async function callGemini(apiKey: string, todayHKT: string): Promise<string> {
     throw new Error('Gemini returned empty content')
   }
   return text as string
+}
+
+// Google intermittently returns 503 UNAVAILABLE ("high demand") on grounded
+// requests — retry transient failures before giving up
+async function callGemini(apiKey: string, todayHKT: string, attempts = 3): Promise<string> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await callGeminiOnce(apiKey, todayHKT)
+    } catch (err) {
+      lastErr = err
+      const retryable = (err as Error & { retryable?: boolean }).retryable
+      if (!retryable || i === attempts - 1) throw err
+      console.warn(`[/api/briefing] Attempt ${i + 1}/${attempts} failed, retrying:`, (err as Error).message?.slice(0, 200))
+      await new Promise((r) => setTimeout(r, 2000 * (i + 1)))
+    }
+  }
+  throw lastErr
 }
 
 export async function GET(request: Request) {
@@ -175,7 +209,7 @@ export async function GET(request: Request) {
       })
     }
     return NextResponse.json<BriefingResponse>({
-      content: FALLBACK_CONTENT,
+      content: MISSING_KEY_CONTENT,
       generatedAt: new Date().toISOString(),
       source: 'error',
     })
