@@ -105,16 +105,23 @@ class FileStore implements KVStore {
 
 let store: KVStore | null = null
 
+// The Vercel Marketplace Upstash integration injects KV_REST_API_* names;
+// a directly-created Upstash database uses UPSTASH_REDIS_REST_* — accept both
+function redisCreds(): { url: string; token: string } | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN
+  return url && token ? { url, token } : null
+}
+
 export function getStore(): KVStore {
   if (store) return store
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
-  store = url && token ? new UpstashStore(url, token) : new FileStore()
+  const creds = redisCreds()
+  store = creds ? new UpstashStore(creds.url, creds.token) : new FileStore()
   return store
 }
 
 export function isDurableStore(): boolean {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  return redisCreds() != null
 }
 
 // ── Report helpers (shared by all agents) ────────────────────────────────────
