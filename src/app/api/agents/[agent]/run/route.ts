@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AGENTS } from '@/lib/agents'
 import { runAgent, AgentLockedError } from '@/lib/agents/runner'
 
+// Agents read futures data via Bybit/Binance, which geo-block US datacenter
+// IPs (451) — pin to Frankfurt like the other market-data routes
+export const preferredRegion = 'fra1'
 // Agent runs gather many upstream sources then call Gemini — allow headroom
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'

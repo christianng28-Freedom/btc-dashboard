@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { computeMarketState } from '@/lib/server/market-state'
 
-// Upstream fetches (CryptoCompare ×2, Bybit, FRED ×6, CoinMetrics, CoinGecko,
+// Bybit/Binance geo-block US datacenter IPs (451) — pin to Frankfurt
+export const preferredRegion = 'fra1'
+// Upstream fetches (Yahoo, Bybit, FRED ×6, CoinMetrics, CoinGecko,
 // Alternative.me) can take a while in aggregate
 export const maxDuration = 60
 
