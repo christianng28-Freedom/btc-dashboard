@@ -198,11 +198,29 @@ function ReportCard({ report }: { report: AgentReport }) {
   )
 }
 
+const RUN_KEY_STORAGE = 'cmd-agent-run-key'
+
 export default function DeskPage() {
   const [agentFilter, setAgentFilter] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [runStatus, setRunStatus] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
+  const [runKey, setRunKey] = useState<string>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem(RUN_KEY_STORAGE) ?? '' : '',
+  )
   const queryClient = useQueryClient()
+
+  const promptForKey = () => {
+    const entered = window.prompt(
+      'Run key (the CRON_SECRET configured on Vercel). Stored only in this browser.',
+      runKey,
+    )
+    if (entered === null) return
+    const trimmed = entered.trim()
+    setRunKey(trimmed)
+    if (trimmed) localStorage.setItem(RUN_KEY_STORAGE, trimmed)
+    else localStorage.removeItem(RUN_KEY_STORAGE)
+    setRunStatus(trimmed ? { kind: 'success', text: 'Run key saved for this browser.' } : null)
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['agent-reports', agentFilter],
@@ -216,9 +234,19 @@ export default function DeskPage() {
     setRunning(true)
     setRunStatus(null)
     try {
-      // Works in dev without CRON_SECRET; in production append ?key=
-      const res = await fetch(`/api/agents/${agent}/run`, { method: 'POST' })
-      if (!res.ok) {
+      // Dev needs no key; production requires the CRON_SECRET as ?key=
+      const url = runKey
+        ? `/api/agents/${agent}/run?key=${encodeURIComponent(runKey)}`
+        : `/api/agents/${agent}/run`
+      const res = await fetch(url, { method: 'POST' })
+      if (res.status === 401) {
+        setRunStatus({
+          kind: 'error',
+          text: runKey
+            ? 'Unauthorized — the saved run key does not match the CRON_SECRET on Vercel. Click the key icon to update it.'
+            : 'Unauthorized — production runs need the CRON_SECRET. Click the key icon next to the run button to save it.',
+        })
+      } else if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null
         setRunStatus({ kind: 'error', text: body?.error ?? `Run failed (HTTP ${res.status})` })
       } else {
@@ -246,13 +274,26 @@ export default function DeskPage() {
           <h1 className="text-2xl font-bold text-[#e0e0e0]">Analyst Desk</h1>
           <p className="text-sm text-[#666] mt-0.5">Reports from the AI analyst team</p>
         </div>
-        <button
-          onClick={() => triggerRun(agentFilter ?? 'momentum')}
-          disabled={running}
-          className="text-xs font-mono px-3 py-1.5 rounded border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f615] disabled:opacity-40 transition-colors"
-        >
-          {running ? 'Running…' : `Run ${agentFilter ?? 'momentum'} now`}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => triggerRun(agentFilter ?? 'momentum')}
+            disabled={running}
+            className="text-xs font-mono px-3 py-1.5 rounded border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f615] disabled:opacity-40 transition-colors"
+          >
+            {running ? 'Running…' : `Run ${agentFilter ?? 'momentum'} now`}
+          </button>
+          <button
+            onClick={promptForKey}
+            title={runKey ? 'Run key saved — click to change' : 'Set the run key (CRON_SECRET) for production runs'}
+            className={`text-xs font-mono px-2 py-1.5 rounded border transition-colors ${
+              runKey
+                ? 'border-[#22c55e55] text-[#22c55e] hover:bg-[#22c55e10]'
+                : 'border-[#1a1a2e] text-[#666] hover:text-[#999]'
+            }`}
+          >
+            🔑
+          </button>
+        </div>
       </div>
 
       {runStatus && (

@@ -1,31 +1,21 @@
 import { NextResponse } from 'next/server'
 import { fetchFREDSeries } from '@/lib/api/fred'
+import { fetchDailyHistory, aggregateWeekly } from '@/lib/server/candles'
 
 export type DataPoint = { date: string; value: number }
 
-const CC_HISTODAY = 'https://min-api.cryptocompare.com/data/v2/histoday'
-
-interface CCCandle { time: number; close: number }
-
+// BTC weekly closes from the shared candle lib (Yahoo → Binance fallback).
+// The previous CryptoCompare source returns 401 for all anonymous requests.
 async function fetchBtcWeekly(weeks: number): Promise<DataPoint[]> {
-  const params = new URLSearchParams({
-    fsym: 'BTC', tsym: 'USD',
-    limit: String(weeks),
-    aggregate: '7',
-  })
-  const res = await fetch(`${CC_HISTODAY}?${params}`, {
-    signal: AbortSignal.timeout(10000),
-    next: { revalidate: 3600 },
-  })
-  if (!res.ok) return []
-  const json = (await res.json()) as { Response: string; Data: { Data: CCCandle[] } }
-  if (json.Response !== 'Success') return []
-  return json.Data.Data
-    .filter((k) => k.close > 0)
-    .map((k) => ({
-      date:  new Date(k.time * 1000).toISOString().slice(0, 10),
-      value: k.close,
+  try {
+    const weekly = aggregateWeekly(await fetchDailyHistory())
+    return weekly.slice(-weeks).map((c) => ({
+      date: new Date(c.time * 1000).toISOString().slice(0, 10),
+      value: c.close,
     }))
+  } catch {
+    return []
+  }
 }
 
 export interface NetLiqPoint {

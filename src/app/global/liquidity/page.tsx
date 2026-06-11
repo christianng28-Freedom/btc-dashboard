@@ -215,7 +215,7 @@ function NetLiquidityChart({
       </ResponsiveContainer>
 
       <div className="text-[9px] font-mono text-[#333344]">
-        Source: FRED (WALCL, WTREGEN, RRPONTSYD) · Binance (BTC/USDT weekly)
+        Source: FRED (WALCL, WTREGEN, RRPONTSYD) · Yahoo Finance (BTC-USD weekly)
       </div>
     </div>
   )
@@ -628,7 +628,7 @@ function GlobalM2YoYChart({
           <Line yAxisId="right" type="monotone" dataKey="btc" stroke="#fbbf24" strokeWidth={1} strokeDasharray="4 2" dot={false} connectNulls />
         </ComposedChart>
       </ResponsiveContainer>
-      <div className="text-[9px] font-mono text-[#333344]">Source: FRED (M2SL, MANMM101 series) · Binance (BTC/USDT)</div>
+      <div className="text-[9px] font-mono text-[#333344]">Source: FRED (M2SL, MANMM101 series) · Yahoo Finance (BTC-USD)</div>
     </div>
   )
 }
