@@ -9,14 +9,15 @@ import { useDominance } from '@/hooks/useDominance'
 import { useTechnicalIndicators } from '@/hooks/useTechnicalIndicators'
 import { useFearGreed } from '@/hooks/useFearGreed'
 import { useFundamentalData } from '@/hooks/useFundamentalData'
+import { useMacroData } from '@/hooks/useMacroData'
 import { useCompositeScore } from '@/hooks/useCompositeScore'
 import { useOnChainScore } from '@/hooks/useOnChainScore'
 import { SignalSummaryPanel } from '@/components/dashboard/SignalSummaryPanel'
+import { AllocationPanel } from '@/components/dashboard/AllocationPanel'
 import { SummaryText } from '@/components/dashboard/SummaryText'
 import { KeyAlerts } from '@/components/dashboard/KeyAlerts'
 import { SecondaryInfoBar } from '@/components/dashboard/SecondaryInfoBar'
 import { BacktestPanel } from '@/components/backtest/BacktestPanel'
-import { NewsFeed } from '@/components/global/NewsFeed'
 import { CandlestickChart } from '@/components/charts/CandlestickChart'
 import { calcFundamentalScore } from '@/lib/calc/fundamental-scores'
 import { calcRSI } from '@/lib/calc/rsi'
@@ -43,51 +44,63 @@ export default function DashboardHome() {
   // ── Data hooks ──────────────────────────────────────────────────
   const { price, changePercent } = usePrice()
   const { candles } = useCandles(chartInterval, 500)
+  // Scores and alerts are always computed from daily candles — the chart's
+  // display interval must never change the conviction read or the alert set
+  const { candles: dailyCandles } = useCandles('1d', 500)
   const { candles: historyCandles } = useHistoricalData()
   const { candles: extendedCandles } = useExtendedHistory()
   const { data: dominanceData } = useDominance()
   const { current: fgCurrent, sparkline: fgSparkline, isLoading: fgLoading } = useFearGreed()
   const { data: fundData, isLoading: fundLoading } = useFundamentalData()
+  const { data: macroData } = useMacroData()
 
-  const dominancePct = dominanceData?.dominance ?? 50
+  const dominancePct = dominanceData?.dominance ?? null
 
   // ── Scores ───────────────────────────────────────────────────────
-  const taScore = useTechnicalIndicators(candles, historyCandles, dominancePct)
+  const taScore = useTechnicalIndicators(dailyCandles, historyCandles, dominancePct)
 
   const fundamentalScore = useMemo(() => {
-    if (!fgCurrent) return null
+    // No score without real leverage data — zeroed-out OI/funding inputs
+    // would read as a mild buy signal
+    if (!fgCurrent || !fundData) return null
     return calcFundamentalScore({
       fearGreed: parseInt(fgCurrent.value, 10),
-      oiValue: fundData?.currentOI ?? 0,
-      oi90dMA: fundData?.oi90dMA ?? 0,
-      fundingRate: fundData?.currentFundingRate ?? 0,
+      oiValue: fundData.currentOI,
+      oi90dMA: fundData.oi90dMA,
+      fundingRate: fundData.currentFundingRate,
+      fedFunds: macroData?.fedFundsUpper ?? null,
+      cpiYoY: macroData?.cpiYoY ?? null,
+      pceYoY: macroData?.pceYoY ?? null,
+      m2YoY: macroData?.m2YoY ?? null,
+      tenYearYield: macroData?.tenYearYield ?? null,
+      dxy: macroData?.dxy ?? null,
     })
-  }, [fgCurrent, fundData])
+  }, [fgCurrent, fundData, macroData])
 
   const onChainScore = useOnChainScore()
   const overallScore = useCompositeScore(taScore, fundamentalScore, onChainScore)
 
-  // ── Alert inputs ────────────────────────────────────────────────
+  // ── Alert inputs (daily candles only — never the chart's interval) ──
   const alertInputs = useMemo((): AlertInputs => {
     const inputs: AlertInputs = {}
 
-    if (candles.length > 0) {
-      inputs.price = candles[candles.length - 1].close
+    if (dailyCandles.length > 0) {
+      inputs.price = dailyCandles[dailyCandles.length - 1].close
 
-      const rsiData = calcRSI(candles)
+      const rsiData = calcRSI(dailyCandles)
       if (rsiData.length > 0) inputs.rsi = rsiData[rsiData.length - 1].value
 
-      const stochData = calcStochRSI(candles)
+      const stochData = calcStochRSI(dailyCandles)
       if (stochData.length > 0) inputs.stochRsiK = stochData[stochData.length - 1].k
 
-      const sma200 = calcSMA(candles, 200)
+      const sma200 = calcSMA(dailyCandles, 200)
       if (sma200.length > 0) inputs.ma200 = sma200[sma200.length - 1].value
 
-      const sma50 = calcSMA(candles, 50)
+      const sma50 = calcSMA(dailyCandles, 50)
       if (sma50.length > 0) inputs.ma50 = sma50[sma50.length - 1].value
     }
 
-    const piData = historyCandles.length >= 350 ? historyCandles : candles
+    const piData = historyCandles.length >= 350 ? historyCandles : dailyCandles
     if (piData.length >= 350) {
       const piCycle = getPiCycleGap(piData)
       inputs.piCycleGapPct = piCycle?.gapPct ?? null
@@ -104,7 +117,7 @@ export default function DashboardHome() {
     }
 
     return inputs
-  }, [candles, historyCandles, fgCurrent, fundData])
+  }, [dailyCandles, historyCandles, fgCurrent, fundData])
 
   const changeColor = changePercent >= 0 ? '#22c55e' : '#ef4444'
 
@@ -129,11 +142,6 @@ export default function DashboardHome() {
       {/* Secondary info bar */}
       <SecondaryInfoBar />
 
-      {/* BTC Headlines */}
-      <section className="bg-[#0d0d14] border border-[#1a1a2e] rounded-lg px-4 py-3">
-        <NewsFeed maxItems={6} compact />
-      </section>
-
       {/* Signal Summary */}
       <section>
         <SectionTitle>Conviction Signals</SectionTitle>
@@ -149,6 +157,12 @@ export default function DashboardHome() {
 
       {/* Summary interpretation */}
       <SummaryText score={overallScore?.totalScore ?? null} />
+
+      {/* Position vs model — the decision layer */}
+      <AllocationPanel
+        overallScore={overallScore?.totalScore ?? null}
+        tenYearYield={macroData?.tenYearYield ?? null}
+      />
 
       {/* Alerts + Key metrics */}
       <section>

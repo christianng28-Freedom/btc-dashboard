@@ -29,7 +29,25 @@ const PRIORITY_CONFIG: Record<AlertPriority, { dot: string; border: string; bg: 
 export function KeyAlerts({ inputs }: Props) {
   const alerts = evaluateAlerts(inputs)
 
+  // Distinguish "nothing to worry about" from "we can't see" — an alert
+  // engine with missing inputs must never present itself as all-clear
+  const missingGroups: string[] = []
+  if (inputs.rsi === undefined) missingGroups.push('momentum')
+  if (inputs.fearGreed === undefined) missingGroups.push('sentiment')
+  if (inputs.fundingRate === undefined && inputs.oiDeviationPct === undefined) missingGroups.push('leverage')
+
   if (alerts.length === 0) {
+    if (missingGroups.length === 3) {
+      return (
+        <div className="space-y-2">
+          <div className="text-xs uppercase tracking-widest text-[#666] font-mono mb-3">Key Alerts</div>
+          <div className="bg-[#0d0d14] border border-[#f59e0b30] rounded-lg px-4 py-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#f59e0b] flex-shrink-0" />
+            <span className="text-[#f59e0b] text-xs font-mono">Signal data unavailable — alerts cannot be evaluated</span>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="space-y-2">
         <div className="text-xs uppercase tracking-widest text-[#666] font-mono mb-3">Key Alerts</div>
@@ -37,6 +55,14 @@ export function KeyAlerts({ inputs }: Props) {
           <span className="w-2 h-2 rounded-full bg-[#22c55e] flex-shrink-0" />
           <span className="text-[#22c55e] text-xs font-mono">All signals nominal — no active alerts</span>
         </div>
+        {missingGroups.length > 0 && (
+          <div className="bg-[#0d0d14] border border-[#f59e0b30] rounded-lg px-4 py-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] flex-shrink-0" />
+            <span className="text-[#f59e0b] text-[10px] font-mono">
+              {missingGroups.join(' + ')} data unavailable — coverage is partial
+            </span>
+          </div>
+        )}
       </div>
     )
   }
@@ -47,6 +73,14 @@ export function KeyAlerts({ inputs }: Props) {
         <div className="text-xs uppercase tracking-widest text-[#666] font-mono">Key Alerts</div>
         <div className="text-[10px] text-[#555] font-mono">{alerts.length} active</div>
       </div>
+      {missingGroups.length > 0 && (
+        <div className="bg-[#0d0d14] border border-[#f59e0b30] rounded-lg px-4 py-2 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] flex-shrink-0" />
+          <span className="text-[#f59e0b] text-[10px] font-mono">
+            {missingGroups.join(' + ')} data unavailable — coverage is partial
+          </span>
+        </div>
+      )}
       {alerts.map((alert) => {
         const cfg = PRIORITY_CONFIG[alert.priority]
         return (

@@ -4,7 +4,7 @@ import { useHistoricalData } from '@/hooks/useHistoricalData'
 import { useExtendedHistory } from '@/hooks/useExtendedHistory'
 import { useNuplData } from '@/hooks/useNuplData'
 import { calcOnChainScore } from '@/lib/calc/onchain-scores'
-import { getPiCycleGap, getRainbowBandIndex } from '@/lib/calc/technical-scores'
+import { getRainbowBandIndex } from '@/lib/calc/technical-scores'
 import type { OnChainScoreComponents } from '@/lib/calc/onchain-scores'
 
 /** Sliding-window SMA — returns one value per index from `period-1` onwards */
@@ -58,22 +58,17 @@ export function useOnChainScore(): OnChainScoreComponents | null {
     const currentNUPL = latestNupl?.nupl ?? null
     const currentMVRV = latestNupl?.mvrv ?? null
 
-    // ── 5. Pi Cycle Gap ──
-    const allCandles = extendedCandles.length >= 350 ? extendedCandles : historyCandles
-    const piGap = getPiCycleGap(allCandles)
-    const piCycleGapPct = piGap?.gapPct ?? null
-
-    // ── 6. Rainbow Band Index ──
+    // ── 5. Rainbow Band Index ──
     const latestCandle = historyCandles[historyCandles.length - 1]
     const rainbowBandIndex = latestCandle
       ? getRainbowBandIndex(latestCandle.close, latestCandle.time)
       : null
 
-    // ── 7. Halving Cycle Position (0–1) ──
+    // ── 6. Halving Cycle Position (0–1) ──
     const now = Date.now()
     const halvingCyclePos = Math.min(1, (now - HALVING_4_TIMESTAMP) / CYCLE_LENGTH_MS)
 
-    // ── 8. Price vs ATH ──
+    // ── 7. Price vs ATH ──
     const allPrices = extendedCandles.length > historyCandles.length
       ? extendedCandles.map((c) => c.close)
       : histPrices
@@ -88,7 +83,6 @@ export function useOnChainScore(): OnChainScoreComponents | null {
       historicalWMARatios: wmaRatios,
       currentNUPL,
       currentMVRV,
-      piCycleGapPct,
       rainbowBandIndex,
       halvingCyclePos,
       priceVsAth,

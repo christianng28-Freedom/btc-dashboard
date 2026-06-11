@@ -250,7 +250,7 @@ export function calcTechnicalScore(params: {
   stochRsiK: number
   piCycleGapPct: number | null
   twoYearMA: number | null
-  dominancePct: number
+  dominancePct: number | null
 }): TechnicalScoreComponents {
   const { rsi, macdHistogram, price, ma200, bollingerPctB, stochRsiK, piCycleGapPct, twoYearMA, dominancePct } = params
 
@@ -289,7 +289,9 @@ export function calcTechnicalScore(params: {
   }
 
   // 8. BTC Dominance score (weight 0.15): (1 - minMax(dom, 40, 70)) * 100
-  const dominanceScore = (1 - minMax(dominancePct, 40, 70)) * 100
+  // Neutral when dominance data is unavailable — a guessed value here would
+  // silently skew the composite (e.g. 50% reads as 67, a sell lean)
+  const dominanceScore = dominancePct != null ? (1 - minMax(dominancePct, 40, 70)) * 100 : 50
 
   // Weighted sum
   const totalScore =

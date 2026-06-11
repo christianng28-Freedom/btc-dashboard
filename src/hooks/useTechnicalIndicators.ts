@@ -12,7 +12,7 @@ import type { TechnicalScoreComponents } from '@/lib/calc/technical-scores'
 export function useTechnicalIndicators(
   candles: OHLCV[],
   historyCandles: OHLCV[],
-  dominancePct: number
+  dominancePct: number | null
 ): TechnicalScoreComponents | null {
   return useMemo(() => {
     if (candles.length < 200) return null
