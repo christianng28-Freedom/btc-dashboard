@@ -33,6 +33,21 @@ const navGroups: NavGroup[] = [
           </svg>
         ),
       },
+      {
+        href: '/desk',
+        label: 'Analyst Desk',
+        exactMatch: true,
+        icon: (
+          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 12h6m-6 4h6M9 8h6M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"
+            />
+          </svg>
+        ),
+      },
     ],
   },
   {

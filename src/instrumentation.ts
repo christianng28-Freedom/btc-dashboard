@@ -29,9 +29,16 @@ async function prewarmBriefing(): Promise<void> {
   setTimeout(prewarmBriefing, 24 * 3600 * 1000)
 }
 
-export function register() {
+export async function register() {
   // Only run in the Node.js server process, not in the Edge runtime
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
+
+  // Prefer IPv4 for outbound fetches. On machines with a broken IPv6 path,
+  // Node's default verbatim DNS order makes fetches to IPv6-enabled hosts
+  // (Yahoo Finance, CoinGecko, Alternative.me, Google APIs) fail with
+  // "fetch failed" while IPv4-only hosts work. Harmless where IPv6 is fine.
+  const dns = await import('node:dns')
+  dns.setDefaultResultOrder('ipv4first')
 
   const delay = msUntilNext8amHKT()
   const nextFire = new Date(Date.now() + delay)

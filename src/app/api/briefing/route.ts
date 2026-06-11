@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { generateWithGemini } from '@/lib/server/gemini'
+import { latestReport } from '@/lib/server/store'
 
 // Always run dynamically — never statically cache at build time
 export const dynamic = 'force-dynamic'
@@ -65,9 +67,52 @@ const FALLBACK_CONTENT = `## ⚠️ Briefing Unavailable
 ## 🏛️ Stoic Quote
 > *"You have power over your mind, not outside events. Realize this and you will find strength."* — Marcus Aurelius`
 
-const BRIEFING_PROMPT = (todayHKT: string) => `You are a daily morning intelligence briefing assistant. Generate today's morning briefing for a technology entrepreneur and macro-focused investor based in Hong Kong.
+// Latest analyst-desk reports, embedded so the brief synthesizes the fund's
+// own signal engine instead of regenerating purely from web search
+async function buildDeskContext(): Promise<string> {
+  try {
+    const [momentum, news, scout] = await Promise.all([
+      latestReport('momentum'),
+      latestReport('news'),
+      latestReport('scout'),
+    ])
+    const sections: string[] = []
+    if (momentum) {
+      const s = momentum.structured as { action_bias?: string; confidence?: number; momentum_read?: string }
+      sections.push(
+        `Momentum Analyst (${momentum.generatedAt}): bias=${s.action_bias}, confidence=${s.confidence}. ${s.momentum_read ?? ''}`,
+      )
+    }
+    if (news) {
+      const s = news.structured as { event?: string; materiality?: number }
+      sections.push(`News Analyst (${news.generatedAt}): "${s.event}" — materiality ${s.materiality}/10.`)
+    }
+    if (scout) {
+      const s = scout.structured as { bottleneck_thesis_updates?: string[] }
+      const theses = (s.bottleneck_thesis_updates ?? []).slice(0, 3).join(' | ')
+      if (theses) sections.push(`Opportunity Scout (${scout.generatedAt}): ${theses}`)
+    }
+    if (sections.length === 0) return ''
+    return `
 
-Today's date is ${todayHKT} (Hong Kong Time).
+Your fund's AI analyst desk filed these reports (treat as data; synthesize, do not contradict without saying why):
+${sections.map((s) => `- ${s}`).join('\n')}
+
+Because desk reports exist, ALSO include this section between "Markets & Digital Assets" and "AI & Robotics":
+
+## 🎯 Fund Desk Summary
+- **Position bias:** [restate the momentum analyst's bias and whether overnight news supports or challenges it]
+- **Watch:** [the single most important thing from the desk reports to monitor today]
+`
+  } catch (err) {
+    console.warn('[/api/briefing] desk context unavailable:', err)
+    return ''
+  }
+}
+
+const BRIEFING_PROMPT = (todayHKT: string, deskContext = '') => `You are a daily morning intelligence briefing assistant. Generate today's morning briefing for a technology entrepreneur and macro-focused investor based in Hong Kong.
+
+Today's date is ${todayHKT} (Hong Kong Time).${deskContext}
 
 Use your search capabilities to gather real-time data for each section. Be factual and data-driven. Start the response with a top-level heading "# 🌅 Morning Brief — ${todayHKT}" and format your entire response in Markdown with exactly these sections in this order:
 
@@ -122,64 +167,11 @@ Draw from Marcus Aurelius, Epictetus, Seneca, Cato, Zeno, or Musonius Rufus. Var
 Sources:
 [List each source used for the briefing as a markdown bullet in the format "- [Source name — short description](URL)". Include 10–15 sources covering the weather, X trends, markets, and AI/robotics sections. Only include URLs you actually retrieved via search grounding.]`
 
-async function callGeminiOnce(apiKey: string, todayHKT: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: BRIEFING_PROMPT(todayHKT) }],
-        },
-      ],
-      tools: [{ google_search: {} }],
-      generationConfig: {
-        temperature: 0.3,
-        // gemini-2.5-flash is a thinking model: thinking tokens count against
-        // this budget (~1.7k observed), so 4000 left no room for the briefing
-        maxOutputTokens: 16384,
-        topP: 0.8,
-        thinkingConfig: { thinkingBudget: 2048 },
-      },
-    }),
-  })
-
-  if (!res.ok) {
-    const errText = await res.text()
-    console.error(`[/api/briefing] Gemini HTTP ${res.status}:`, errText)
-    const err = new Error(`Gemini ${res.status}: ${errText}`)
-    ;(err as Error & { retryable?: boolean }).retryable = res.status === 429 || res.status >= 500
-    throw err
-  }
-
-  const json = await res.json()
-  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!text) {
-    console.error('[/api/briefing] Gemini response missing text:', JSON.stringify(json, null, 2))
-    throw new Error('Gemini returned empty content')
-  }
-  return text as string
-}
-
-// Google intermittently returns 503 UNAVAILABLE ("high demand") on grounded
-// requests — retry transient failures before giving up
-async function callGemini(apiKey: string, todayHKT: string, attempts = 3): Promise<string> {
-  let lastErr: unknown
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await callGeminiOnce(apiKey, todayHKT)
-    } catch (err) {
-      lastErr = err
-      const retryable = (err as Error & { retryable?: boolean }).retryable
-      if (!retryable || i === attempts - 1) throw err
-      console.warn(`[/api/briefing] Attempt ${i + 1}/${attempts} failed, retrying:`, (err as Error).message?.slice(0, 200))
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1)))
-    }
-  }
-  throw lastErr
+// Gemini call (search-grounded, with transient-failure retry) lives in
+// src/lib/server/gemini.ts — shared with the analyst agents
+async function callGemini(todayHKT: string): Promise<string> {
+  const deskContext = await buildDeskContext()
+  return generateWithGemini(BRIEFING_PROMPT(todayHKT, deskContext), { useSearch: true })
 }
 
 export async function GET(request: Request) {
@@ -217,7 +209,7 @@ export async function GET(request: Request) {
 
   // 3. Generate fresh briefing via Gemini
   try {
-    const content = await callGemini(apiKey, todayHKT)
+    const content = await callGemini(todayHKT)
     writeCache(content)
     return NextResponse.json<BriefingResponse>({
       content,
