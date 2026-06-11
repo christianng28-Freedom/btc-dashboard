@@ -21,12 +21,5 @@
     "src/app/api/agents/[agent]/run/route.ts": {
       "maxDuration": 300
     }
-  },
-  "crons": [
-    { "path": "/api/agents/momentum/run", "schedule": "35 13 * * 1-5" },
-    { "path": "/api/agents/momentum/run", "schedule": "30 17 * * 1-5" },
-    { "path": "/api/agents/momentum/run", "schedule": "5 20 * * 1-5" },
-    { "path": "/api/agents/news/run", "schedule": "0 */2 * * *" },
-    { "path": "/api/agents/scout/run", "schedule": "30 21 * * *" }
-  ]
+  }
 }

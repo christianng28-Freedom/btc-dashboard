@@ -1,0 +1,60 @@
+# Schedules the AI analyst agents by calling the production run endpoints.
+# Vercel Hobby rejects sub-daily crons in vercel.json, so GitHub Actions is
+# the scheduler instead. Requires the repo secret CRON_SECRET to match the
+# CRON_SECRET env var configured on the Vercel project.
+#
+# Times are UTC. Momentum maps to US equity sessions (13:35 ≈ 9:35am ET open
+# during DST; shifts one hour earlier relative to the market in winter).
+
+name: Analyst agents
+
+on:
+  schedule:
+    - cron: '35 13 * * 1-5' # momentum — US open
+    - cron: '30 17 * * 1-5' # momentum — US midday
+    - cron: '5 20 * * 1-5'  # momentum — US close
+    - cron: '0 */2 * * *'   # news sweep
+    - cron: '30 21 * * *'   # scout — daily after US close
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: 'Agent to run'
+        required: true
+        default: 'momentum'
+        type: choice
+        options: [momentum, news, scout]
+
+env:
+  BASE_URL: https://btc-dashboard-five.vercel.app
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve agent from trigger
+        id: which
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "agent=${{ inputs.agent }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.event.schedule }}" in
+              '0 */2 * * *') echo "agent=news" >> "$GITHUB_OUTPUT" ;;
+              '30 21 * * *') echo "agent=scout" >> "$GITHUB_OUTPUT" ;;
+              *) echo "agent=momentum" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
+      - name: Trigger agent run
+        run: |
+          set -o pipefail
+          agent="${{ steps.which.outputs.agent }}"
+          echo "Running agent: $agent"
+          http_code=$(curl -sS -o response.json -w "%{http_code}" \
+            --max-time 290 -X POST \
+            "$BASE_URL/api/agents/$agent/run?key=${{ secrets.CRON_SECRET }}")
+          echo "HTTP $http_code"
+          cat response.json | head -c 1000 || true
+          # 409 = a run is already in progress — treat as success, not failure
+          if [ "$http_code" != "200" ] && [ "$http_code" != "409" ]; then
+            exit 1
+          fi
