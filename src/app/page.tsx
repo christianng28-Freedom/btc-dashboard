@@ -93,32 +93,46 @@ export default function GlobalOverview() {
           thresholds: { low: 0, high: 5 },
           sub: 'M2SL',
         },
-        {
-          label: '10Y Yield',
-          value: `${data.tenYearYield.toFixed(2)}%`,
-          rawValue: data.tenYearYield,
-          change: data.tenYearYieldChange,
-          colorScheme: 'red-green',
-          thresholds: { low: 3, high: 5 },
-          sub: 'DGS10',
-        },
-        {
-          label: 'DXY',
-          value: data.dxy.toFixed(2),
-          rawValue: data.dxy,
-          change: data.dxyChange,
-          colorScheme: 'neutral',
-          sub: 'DX-Y.NYB',
-        },
-        {
-          label: 'VIX',
-          value: data.vix.toFixed(1),
-          rawValue: data.vix,
-          change: data.vixChange,
-          colorScheme: 'red-green',
-          thresholds: { low: 18, high: 28 },
-          sub: 'VIXCLS',
-        },
+        // Series-backed tiles (10Y, DXY, VIX) can fail independently —
+        // omit the tile rather than render a fake 0.00
+        ...(data.tenYearYield != null
+          ? [
+              {
+                label: '10Y Yield',
+                value: `${data.tenYearYield.toFixed(2)}%`,
+                rawValue: data.tenYearYield,
+                change: data.tenYearYieldChange,
+                colorScheme: 'red-green',
+                thresholds: { low: 3, high: 5 },
+                sub: 'DGS10',
+              } as MetricItem,
+            ]
+          : []),
+        ...(data.dxy != null
+          ? [
+              {
+                label: 'DXY',
+                value: data.dxy.toFixed(2),
+                rawValue: data.dxy,
+                change: data.dxyChange,
+                colorScheme: 'neutral',
+                sub: 'DX-Y.NYB',
+              } as MetricItem,
+            ]
+          : []),
+        ...(data.vix != null
+          ? [
+              {
+                label: 'VIX',
+                value: data.vix.toFixed(1),
+                rawValue: data.vix,
+                change: data.vixChange,
+                colorScheme: 'red-green',
+                thresholds: { low: 18, high: 28 },
+                sub: 'VIXCLS',
+              } as MetricItem,
+            ]
+          : []),
       ]
     : []
 
@@ -147,7 +161,14 @@ export default function GlobalOverview() {
         {isLoading && <MetricStripSkeleton />}
         {isError && (
           <div className="text-xs text-[#ef4444] font-mono py-3">
-            Failed to load macro data — check FRED_API_KEY configuration.
+            Failed to load macro data — the overview API returned an error. See server logs
+            for the failing source (FRED, Yahoo, or CoinGecko).
+          </div>
+        )}
+        {data && data.degraded?.length > 0 && (
+          <div className="text-[10px] text-[#f59e0b] font-mono mb-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] flex-shrink-0" />
+            Partial data — {data.degraded.join(', ')} unavailable this refresh
           </div>
         )}
         {data && <MetricHeatmapStrip metrics={metrics} />}

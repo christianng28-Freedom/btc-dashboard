@@ -31,13 +31,13 @@ export interface GlobalOverviewData {
   m2YoY: number
   m2YoYChange: number
   m2Date: string
-  tenYearYield: number
+  tenYearYield: number | null  // null when the FRED DGS10 series failed this refresh
   tenYearYieldChange: number   // absolute change in yield points (e.g. +0.05 = +5 bps)
   tenYearDate: string
-  dxy: number
+  dxy: number | null           // null when Yahoo (quote + daily) is unreachable
   dxyChange: number
   dxyDate: string
-  vix: number
+  vix: number | null           // null when the FRED VIXCLS series failed this refresh
   vixChange: number
   vixDate: string
   // Risk regime (legacy)
@@ -52,15 +52,18 @@ export interface GlobalOverviewData {
   realYield10y: number            // DFII10 (%)
   netLiquidityWoW: number         // Howell: Fed balance - TGA - RRP, WoW change ($B)
   netLiquidityTotal: number       // Howell: absolute net liquidity level ($B)
-  // Key markets
+  // Key markets — null when that market's sources were unreachable
   markets: {
-    sp500: MarketSnap
-    nasdaq: MarketSnap
-    gold: MarketSnap
-    dxy: MarketSnap
-    btc: MarketSnap
-    tenY: MarketSnap
+    sp500: MarketSnap | null
+    nasdaq: MarketSnap | null
+    gold: MarketSnap | null
+    dxy: MarketSnap | null
+    btc: MarketSnap | null
+    tenY: MarketSnap | null
   }
+  // Sources that failed this request (e.g. Yahoo rate-limiting datacenter IPs).
+  // Lets the UI say "partial data" instead of failing the whole snapshot.
+  degraded: string[]
 }
 
 function mapLatest(map: Map<string, number>): { value: number; date: string } | null {
@@ -77,6 +80,15 @@ function mapPrevValue(map: Map<string, number>): number | null {
 function mapToSparkline(map: Map<string, number>, n = 31): { date: string; value: number }[] {
   const entries = Array.from(map.entries())
   return entries.slice(-n).map(([date, value]) => ({ date, value }))
+}
+
+/** Derive price + 1-step change from a daily series when the quote endpoint failed */
+function quoteFromMap(map: Map<string, number>): { price: number; changePercent: number } | null {
+  const values = Array.from(map.values())
+  if (values.length < 2) return null
+  const price = values[values.length - 1]
+  const prev = values[values.length - 2]
+  return { price, changePercent: prev > 0 ? ((price - prev) / prev) * 100 : 0 }
 }
 
 function normalizeClamp(value: number, min: number, max: number): number {
@@ -150,6 +162,22 @@ export async function GET() {
     d45.setDate(d45.getDate() - 45)
     const startDate45 = d45.toISOString().split('T')[0]
 
+    // Per-source settling: one flaky upstream (Yahoo rate-limits datacenter
+    // IPs; CoinGecko throttles) must not take down the FRED macro snapshot.
+    // Failed sources are listed in `degraded` so the UI can disclose them.
+    const degraded: string[] = []
+    const settle = async <T,>(label: string, p: Promise<T>, fallback: T): Promise<T> => {
+      try {
+        return await p
+      } catch (err) {
+        console.warn(`[/api/global/overview] ${label} failed:`, err instanceof Error ? err.message : err)
+        if (!degraded.includes(label)) degraded.push(label)
+        return fallback
+      }
+    }
+    const emptyMap = () => new Map<string, number>()
+    type Quote = Awaited<ReturnType<typeof fetchYahooFinanceQuote>>
+
     // Fetch all FRED and equity data in parallel
     const [
       fedRateObs,
@@ -174,31 +202,35 @@ export async function GET() {
       wtregenObs,
       rrpObs,
     ] = await Promise.all([
-      fetchFREDLatest('DFEDTARL', 2),
-      fetchFREDLatest('CPIAUCSL', 14),
-      fetchFREDLatest('UNRATE', 3),
-      fetchFREDLatest('M2SL', 14),
-      fetchFREDSeries('DGS10', startDate45, 3600),
+      settle('FRED', fetchFREDLatest('DFEDTARL', 2), []),
+      settle('FRED', fetchFREDLatest('CPIAUCSL', 14), []),
+      settle('FRED', fetchFREDLatest('UNRATE', 3), []),
+      settle('FRED', fetchFREDLatest('M2SL', 14), []),
+      settle('FRED', fetchFREDSeries('DGS10', startDate45, 3600), emptyMap()),
       // DX-Y.NYB = ICE US Dollar Index (traditional DXY ~99), not FRED DTWEXBGS (~120)
-      fetchYahooFinanceDaily('DX-Y.NYB', '3mo', 300),
-      fetchFREDSeries('VIXCLS', startDate45, 3600),
-      fetchFREDLatest('BAMLH0A0HYM2', 2),
-      fetchFREDLatest('T10Y2Y', 2),
-      fetchYahooFinanceDaily('^GSPC', '3mo', 300),
-      fetchYahooFinanceDaily('^IXIC', '3mo', 300),
-      fetchYahooFinanceDaily('GC=F', '3mo', 300),
-      fetchYahooFinanceQuote('^GSPC'),
-      fetchYahooFinanceQuote('^IXIC'),
-      fetchYahooFinanceQuote('GC=F'),
-      fetchYahooFinanceQuote('DX-Y.NYB'),
-      fetch(
-        'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily',
-        { next: { revalidate: 300 }, headers: { Accept: 'application/json' } },
+      settle('Yahoo', fetchYahooFinanceDaily('DX-Y.NYB', '3mo', 300), emptyMap()),
+      settle('FRED', fetchFREDSeries('VIXCLS', startDate45, 3600), emptyMap()),
+      settle('FRED', fetchFREDLatest('BAMLH0A0HYM2', 2), []),
+      settle('FRED', fetchFREDLatest('T10Y2Y', 2), []),
+      settle('Yahoo', fetchYahooFinanceDaily('^GSPC', '3mo', 300), emptyMap()),
+      settle('Yahoo', fetchYahooFinanceDaily('^IXIC', '3mo', 300), emptyMap()),
+      settle('Yahoo', fetchYahooFinanceDaily('GC=F', '3mo', 300), emptyMap()),
+      settle('Yahoo', fetchYahooFinanceQuote('^GSPC'), null as Quote | null),
+      settle('Yahoo', fetchYahooFinanceQuote('^IXIC'), null as Quote | null),
+      settle('Yahoo', fetchYahooFinanceQuote('GC=F'), null as Quote | null),
+      settle('Yahoo', fetchYahooFinanceQuote('DX-Y.NYB'), null as Quote | null),
+      settle(
+        'CoinGecko',
+        fetch(
+          'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily',
+          { next: { revalidate: 300 }, headers: { Accept: 'application/json' } },
+        ),
+        null as Response | null,
       ),
-      fetchFREDLatest('DFII10', 3),      // 10Y TIPS real yield
-      fetchFREDLatest('WALCL', 3),       // Fed balance sheet ($M, weekly)
-      fetchFREDLatest('WTREGEN', 3),     // Treasury General Account ($M, weekly)
-      fetchFREDLatest('RRPONTSYD', 3),   // Overnight Reverse Repo ($B, daily)
+      settle('FRED', fetchFREDLatest('DFII10', 3), []),      // 10Y TIPS real yield
+      settle('FRED', fetchFREDLatest('WALCL', 3), []),       // Fed balance sheet ($M, weekly)
+      settle('FRED', fetchFREDLatest('WTREGEN', 3), []),     // Treasury General Account ($M, weekly)
+      settle('FRED', fetchFREDLatest('RRPONTSYD', 3), []),   // Overnight Reverse Repo ($B, daily)
     ])
 
     // --- Fed Rate ---
@@ -238,7 +270,9 @@ export async function GET() {
     // --- DXY (Yahoo Finance DX-Y.NYB = ICE US Dollar Index ~99) ---
     const dxyEntries = Array.from(dxyMap.entries()).slice(-31)
     const dxySparkline = dxyEntries.map(([date, value]) => ({ date, value }))
-    const dxyChange1d = dxyQuote.changePercent
+    // Quote endpoint may be down while the daily series cached — and vice versa
+    const dxyQ = dxyQuote ?? quoteFromMap(dxyMap)
+    const dxyChange1d = dxyQ?.changePercent ?? 0
 
     // --- VIX ---
     const vixLatest = mapLatest(vixMap)
@@ -280,15 +314,16 @@ export async function GET() {
     const nasdaqSparkline = Array.from(nasdaqMap.entries()).slice(-31).map(([date, value]) => ({ date, value }))
     const goldEntries = Array.from(goldMap.entries()).slice(-31)
     const goldSparkline = goldEntries.map(([date, value]) => ({ date, value }))
-    const goldPrice = goldQuote.price
-    const goldChange1d = goldQuote.changePercent
+    const sp500Q = sp500Quote ?? quoteFromMap(sp500Map)
+    const nasdaqQ = nasdaqQuote ?? quoteFromMap(nasdaqMap)
+    const goldQ = goldQuote ?? quoteFromMap(goldMap)
     const dgs10Sparkline = mapToSparkline(dgs10Map)
 
     // --- BTC sparkline ---
     let btcSparkline: { date: string; value: number }[] = []
     let btcPrice = 0
     let btcChange1d = 0
-    if (btcRes.ok) {
+    if (btcRes && btcRes.ok) {
       const btcJson = (await btcRes.json()) as { prices: [number, number][] }
       btcSparkline = btcJson.prices.map(([ts, price]) => ({
         date: new Date(ts).toISOString().split('T')[0],
@@ -313,13 +348,13 @@ export async function GET() {
       m2YoY: Math.round(m2YoY * 10) / 10,
       m2YoYChange: Math.round((m2YoY - m2YoYPrev) * 10) / 10,
       m2Date: m2Obs[0]?.date ?? '',
-      tenYearYield: dgs10Latest?.value ?? 0,
+      tenYearYield: dgs10Latest?.value ?? null,
       tenYearYieldChange: Math.round(tenYearChange * 10000) / 10000,
       tenYearDate: dgs10Latest?.date ?? '',
-      dxy: Math.round(dxyQuote.price * 100) / 100,
+      dxy: dxyQ ? Math.round(dxyQ.price * 100) / 100 : null,
       dxyChange: Math.round(dxyChange1d * 10) / 10,
       dxyDate: dxyEntries[dxyEntries.length - 1]?.[0] ?? '',
-      vix: Math.round((vixLatest?.value ?? 0) * 100) / 100,
+      vix: vixLatest ? Math.round(vixLatest.value * 100) / 100 : null,
       vixChange: Math.round(vixChange1d * 10) / 10,
       vixDate: vixLatest?.date ?? '',
       hyOAS,
@@ -333,37 +368,51 @@ export async function GET() {
       netLiquidityWoW: Math.round(netLiqWoW * 10) / 10,
       netLiquidityTotal: Math.round(netLiqTotal * 10) / 10,
       markets: {
-        sp500: {
-          price: sp500Quote.price,
-          changePercent: Math.round(sp500Quote.changePercent * 10) / 10,
-          sparkline: sp500Sparkline,
-        },
-        nasdaq: {
-          price: nasdaqQuote.price,
-          changePercent: Math.round(nasdaqQuote.changePercent * 10) / 10,
-          sparkline: nasdaqSparkline,
-        },
-        gold: {
-          price: Math.round(goldPrice * 100) / 100,
-          changePercent: Math.round(goldChange1d * 10) / 10,
-          sparkline: goldSparkline,
-        },
-        dxy: {
-          price: Math.round(dxyQuote.price * 100) / 100,
-          changePercent: Math.round(dxyChange1d * 10) / 10,
-          sparkline: dxySparkline,
-        },
-        btc: {
-          price: btcPrice,
-          changePercent: Math.round(btcChange1d * 10) / 10,
-          sparkline: btcSparkline,
-        },
-        tenY: {
-          price: dgs10Latest?.value ?? 0,
-          changePercent: Math.round(tenYearChange * 10000) / 10000,
-          sparkline: dgs10Sparkline,
-        },
+        sp500: sp500Q
+          ? {
+              price: sp500Q.price,
+              changePercent: Math.round(sp500Q.changePercent * 10) / 10,
+              sparkline: sp500Sparkline,
+            }
+          : null,
+        nasdaq: nasdaqQ
+          ? {
+              price: nasdaqQ.price,
+              changePercent: Math.round(nasdaqQ.changePercent * 10) / 10,
+              sparkline: nasdaqSparkline,
+            }
+          : null,
+        gold: goldQ
+          ? {
+              price: Math.round(goldQ.price * 100) / 100,
+              changePercent: Math.round(goldQ.changePercent * 10) / 10,
+              sparkline: goldSparkline,
+            }
+          : null,
+        dxy: dxyQ
+          ? {
+              price: Math.round(dxyQ.price * 100) / 100,
+              changePercent: Math.round(dxyChange1d * 10) / 10,
+              sparkline: dxySparkline,
+            }
+          : null,
+        btc:
+          btcPrice > 0
+            ? {
+                price: btcPrice,
+                changePercent: Math.round(btcChange1d * 10) / 10,
+                sparkline: btcSparkline,
+              }
+            : null,
+        tenY: dgs10Latest
+          ? {
+              price: dgs10Latest.value,
+              changePercent: Math.round(tenYearChange * 10000) / 10000,
+              sparkline: dgs10Sparkline,
+            }
+          : null,
       },
+      degraded,
     }
 
     return NextResponse.json(data, {

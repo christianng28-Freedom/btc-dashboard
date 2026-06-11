@@ -122,11 +122,14 @@ export async function GET() {
       goldYahooR, silverYahooR, platYahooR,
       wtiFredR, brentFredR, ngFredR, copperFredR, lumberYahooR,
       btcYahooR,
+      wtiYahooR, brentYahooR, ngYahooR, copperYahooR,
     ] =
       await Promise.allSettled([
         fetchStooqDaily('xauusd'),
         fetchStooqDaily('xagusd'),
         fetchStooqDaily('xptusd'),
+        // NOTE: Stooq removed CSV access for .f futures (404 since ~2026) —
+        // kept as first candidate in case access returns; FRED/Yahoo cover them
         fetchStooqDaily('cl.f'),
         fetchStooqDaily('bz.f'),
         fetchStooqDaily('ng.f'),
@@ -142,10 +145,17 @@ export async function GET() {
         fetchFREDSeries('DCOILBRENTEU', startStr, 3600),
         fetchFREDSeries('DHHNGSP',      startStr, 3600),   // Henry Hub daily
         fetchFREDSeries('PCOPPUSDM',    startStr, 86400),
-        // Yahoo Finance fallback for lumber futures
-        fetchYahooFinanceDaily('LBS=F', '5y', 3600),
+        // LBR=F is the current CME lumber contract (LBS=F was delisted May 2023
+        // — Yahoo still serves its dead history, which is how a 2023 price
+        // ended up on the dashboard)
+        fetchYahooFinanceDaily('LBR=F', '5y', 3600),
         // Yahoo Finance fallback for BTC (used when Binance is geo-blocked)
         fetchYahooFinanceDaily('BTC-USD', '2y', 3600),
+        // Yahoo Finance fallbacks for energy & copper
+        fetchYahooFinanceDaily('CL=F', '5y', 3600),
+        fetchYahooFinanceDaily('BZ=F', '5y', 3600),
+        fetchYahooFinanceDaily('NG=F', '5y', 3600),
+        fetchYahooFinanceDaily('HG=F', '5y', 3600),
       ])
 
     let ppiArr: DataPoint[] = []
@@ -156,28 +166,41 @@ export async function GET() {
     const g = (r: PromiseSettledResult<Map<string, number>>) =>
       r.status === 'fulfilled' ? mapToSorted(r.value) : []
 
-    // Prefer Stooq; fall back to FRED if Stooq returned nothing
-    const withFallback = (
-      stooqR: PromiseSettledResult<Map<string, number>>,
-      fredR:  PromiseSettledResult<Map<string, number>>,
-      transform?: (v: number) => number,
-    ): DataPoint[] => {
-      const arr = g(stooqR)
-      if (arr.length > 0) return arr
-      const fredArr = g(fredR)
-      return transform ? fredArr.map((p) => ({ ...p, value: transform(p.value) })) : fredArr
+    // Pick the candidate whose data is FRESHEST, not merely the first that
+    // returned something. A "successful" fetch of a delisted series (e.g.
+    // Stooq/Yahoo still serving a dead futures contract's old history) must
+    // not shadow a live source — this is exactly how the lumber card got
+    // frozen at a May-2023 price.
+    type Candidate = {
+      r: PromiseSettledResult<Map<string, number>>
+      transform?: (v: number) => number
+    }
+    const freshest = (...candidates: Candidate[]): DataPoint[] => {
+      let best: DataPoint[] = []
+      for (const { r, transform } of candidates) {
+        let arr = g(r)
+        if (transform) arr = arr.map((p) => ({ ...p, value: transform(p.value) }))
+        if (arr.length === 0) continue
+        if (best.length === 0 || arr[arr.length - 1].date > best[best.length - 1].date) {
+          best = arr
+        }
+      }
+      return best
     }
 
-    const goldArr   = withFallback(goldR,   goldYahooR)
-    const silverArr = withFallback(silverR, silverYahooR)
-    const platArr   = withFallback(platR,   platYahooR)
-    const wtiArr    = withFallback(wtiStooqR,   wtiFredR)
-    const brentArr  = withFallback(brentStooqR, brentFredR)
-    const ngArr     = withFallback(ngStooqR,    ngFredR)
+    const goldArr   = freshest({ r: goldR },   { r: goldYahooR })
+    const silverArr = freshest({ r: silverR }, { r: silverYahooR })
+    const platArr   = freshest({ r: platR },   { r: platYahooR })
+    const wtiArr    = freshest({ r: wtiStooqR },   { r: wtiFredR },   { r: wtiYahooR })
+    const brentArr  = freshest({ r: brentStooqR }, { r: brentFredR }, { r: brentYahooR })
+    const ngArr     = freshest({ r: ngStooqR },    { r: ngFredR },    { r: ngYahooR })
     // PCOPPUSDM is USD/metric ton → convert to USD/lb (/2204.623)
-    const copperArr = withFallback(copperStooqR, copperFredR, (v) => v / 2204.623)
-    // Lumber: try Stooq ls.f first, then Yahoo Finance LBS=F (already in USD/MBF)
-    const lumberArr = withFallback(lumberStooqR, lumberYahooR)
+    const copperArr = freshest(
+      { r: copperStooqR },
+      { r: copperFredR, transform: (v) => v / 2204.623 },
+      { r: copperYahooR },
+    )
+    const lumberArr = freshest({ r: lumberStooqR }, { r: lumberYahooR })
 
     const btcFromBinance: DataPoint[] =
       btcR.status === 'fulfilled'

@@ -1,44 +1,15 @@
 import { NextResponse } from 'next/server'
-import type { OHLCV } from '@/lib/types'
+import { fetchDailyHistory } from '@/lib/server/candles'
 
-const CC_HISTODAY = 'https://min-api.cryptocompare.com/data/v2/histoday'
+// Binance fallback blocks US datacenter IPs — pin to Frankfurt on Vercel
+export const preferredRegion = 'fra1'
 
-interface CCCandle {
-  time: number
-  open: number
-  high: number
-  low: number
-  close: number
-  volumeto: number
-}
-
-async function fetchBatch(toTs?: number): Promise<OHLCV[]> {
-  const params = new URLSearchParams({ fsym: 'BTC', tsym: 'USD', limit: '2000' })
-  if (toTs) params.set('toTs', String(toTs))
-  const res = await fetch(`${CC_HISTODAY}?${params}`, {
-    signal: AbortSignal.timeout(10000),
-    cache: 'no-store',
-  })
-  if (!res.ok) throw new Error(`CryptoCompare error: ${res.status}`)
-  const json = (await res.json()) as { Response: string; Data: { Data: CCCandle[] } }
-  if (json.Response !== 'Success') throw new Error('CryptoCompare API error')
-  return json.Data.Data
-    .filter((k) => k.close > 0)
-    .map((k) => ({
-      time: k.time,
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-      volume: k.volumeto,
-    }))
-}
-
+// GET /api/history — last ~2000 daily candles (Yahoo BTC-USD → Binance)
 export async function GET() {
   try {
-    const candles = await fetchBatch()
-    if (candles.length === 0) throw new Error('No data from CryptoCompare')
-    candles.sort((a, b) => a.time - b.time)
+    const all = await fetchDailyHistory()
+    if (all.length === 0) throw new Error('No daily history from any source')
+    const candles = all.slice(-2000)
     return NextResponse.json(
       { candles },
       { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' } }

@@ -11,7 +11,8 @@ interface YahooChartResponse {
     result: Array<{
       meta: {
         regularMarketPrice: number
-        previousClose: number
+        previousClose?: number
+        chartPreviousClose?: number
         currency: string
         symbol: string
         shortName?: string
@@ -97,7 +98,10 @@ export async function fetchYahooFinanceQuote(ticker: string): Promise<{
   const meta = json.chart.result?.[0]?.meta
   if (!meta) throw new Error(`Yahoo Finance ${ticker}: no meta returned`)
   const price = meta.regularMarketPrice
-  const prev = meta.previousClose
+  // Yahoo stopped populating meta.previousClose on the chart endpoint —
+  // chartPreviousClose (prior trading day's close for a 1d range) is the
+  // reliable field. Without this fallback every quote reads +0.00%.
+  const prev = meta.previousClose ?? meta.chartPreviousClose ?? 0
   return {
     price,
     previousClose: prev,

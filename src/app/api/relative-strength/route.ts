@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { fetchFREDSeries } from '@/lib/api/fred'
 import { fetchStooqDaily } from '@/lib/api/stooq'
+import { fetchYahooFinanceDaily } from '@/lib/api/yahoo-finance'
 
 const CG_BASE = 'https://api.coingecko.com/api/v3'
 
@@ -61,12 +62,15 @@ export async function GET() {
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     const start = oneYearAgo.toISOString().split('T')[0]
 
-    const [btcPrices, goldPrices, spxPrices, dxyPrices] = await Promise.all([
+    const [btcPrices, goldStooq, goldYahoo, spxPrices, dxyPrices] = await Promise.all([
       fetchBTCDaily(),
+      // Stooq's xauusd CSV has started 404ing — Yahoo gold futures cover it
       tryFetch(() => fetchStooqDaily('xauusd'), 'gold/stooq'),
+      tryFetch(() => fetchYahooFinanceDaily('GC=F', '1y', 3600), 'gold/yahoo'),
       tryFetch(() => fetchFREDSeries('SP500', start), 'SP500/FRED'),
       tryFetch(() => fetchFREDSeries('DTWEXBGS', start), 'DXY/FRED'),
     ])
+    const goldPrices = goldStooq.size > 0 ? goldStooq : goldYahoo
 
     const data: RelativeStrengthResponse = {
       gold: buildRatios(btcPrices, goldPrices),

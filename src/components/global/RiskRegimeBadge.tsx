@@ -8,7 +8,7 @@ interface Props {
   regimeLabel: string
   regimeQuadrant: EconomicQuadrant
   regimeAllocation: RegimeAllocation
-  vix: number
+  vix: number | null
   hyOAS: number
   yieldCurve10y2y: number
   m2YoY: number
@@ -518,9 +518,9 @@ export function RiskRegimeBadge({
           <div className="grid grid-cols-4 divide-x divide-[#1a1a2e]">
             <MetricCell
               label="VIX"
-              value={vix.toFixed(1)}
-              sub={vix < 18 ? 'Complacent' : vix < 25 ? 'Normal' : vix < 35 ? 'Elevated' : 'Fear'}
-              subColor={vix < 18 ? '#22c55e' : vix < 25 ? '#6b7280' : vix < 35 ? '#f97316' : '#ef4444'}
+              value={vix != null ? vix.toFixed(1) : 'n/a'}
+              sub={vix == null ? 'No data' : vix < 18 ? 'Complacent' : vix < 25 ? 'Normal' : vix < 35 ? 'Elevated' : 'Fear'}
+              subColor={vix == null ? '#6b7280' : vix < 18 ? '#22c55e' : vix < 25 ? '#6b7280' : vix < 35 ? '#f97316' : '#ef4444'}
             />
             <MetricCell
               label="HY OAS"

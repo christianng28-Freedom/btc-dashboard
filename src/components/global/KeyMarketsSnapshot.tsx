@@ -6,7 +6,7 @@ import type { MarketSnap } from '@/app/api/global/overview/route'
 interface MarketCard {
   key: string
   label: string
-  snap: MarketSnap
+  snap: MarketSnap | null
   formatPrice: (v: number) => string
   formatChange: (snap: MarketSnap) => string
 }
@@ -42,12 +42,12 @@ function ChangeTag({ value, label }: { value: number; label: string }) {
 
 interface Props {
   markets: {
-    sp500: MarketSnap
-    nasdaq: MarketSnap
-    gold: MarketSnap
-    dxy: MarketSnap
-    btc: MarketSnap
-    tenY: MarketSnap
+    sp500: MarketSnap | null
+    nasdaq: MarketSnap | null
+    gold: MarketSnap | null
+    dxy: MarketSnap | null
+    btc: MarketSnap | null
+    tenY: MarketSnap | null
   }
   className?: string
 }
@@ -111,7 +111,25 @@ export function KeyMarketsSnapshot({ markets, className = '' }: Props) {
   return (
     <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 ${className}`}>
       {cards.map((c) => {
-        const positive = c.snap.changePercent >= 0
+        // Unknown is not zero — show an explicit unavailable state when the
+        // market's data source failed this refresh
+        if (!c.snap) {
+          return (
+            <div
+              key={c.key}
+              className="bg-[#0d0d14] border border-[#1a1a2e] rounded-xl p-3 flex flex-col gap-1 opacity-50"
+            >
+              <div className="text-[9px] font-mono text-[#555566] uppercase tracking-wider">
+                {c.label}
+              </div>
+              <div className="text-xs font-mono text-[#555566] leading-tight mt-2">
+                data unavailable
+              </div>
+            </div>
+          )
+        }
+        const snap = c.snap
+        const positive = snap.changePercent >= 0
         return (
           <div
             key={c.key}
@@ -121,11 +139,11 @@ export function KeyMarketsSnapshot({ markets, className = '' }: Props) {
               {c.label}
             </div>
             <div className="text-sm font-mono font-bold text-[#e0e0e0] leading-tight">
-              {c.formatPrice(c.snap.price)}
+              {c.formatPrice(snap.price)}
             </div>
-            <ChangeTag value={c.snap.changePercent} label={c.formatChange(c.snap)} />
+            <ChangeTag value={snap.changePercent} label={c.formatChange(snap)} />
             <div className="mt-1">
-              <Sparkline data={c.snap.sparkline} positive={positive} />
+              <Sparkline data={snap.sparkline} positive={positive} />
             </div>
           </div>
         )
