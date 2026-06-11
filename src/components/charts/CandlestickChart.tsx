@@ -38,6 +38,14 @@ const TIMEFRAMES: { label: string; value: TimeInterval }[] = [
   { label: '1W', value: '1w' },
 ]
 
+// Bars shown on open per timeframe (history extends further back — pan/zoom)
+const DEFAULT_VISIBLE_BARS: Record<TimeInterval, number> = {
+  '1h': 168, // 7 days
+  '4h': 180, // 30 days
+  '1d': 365, // 1 year
+  '1w': 156, // 3 years
+}
+
 type ChartType = 'candlestick' | 'line'
 
 // ── MA Config ───────────────────────────────────────────────────────────────
@@ -82,6 +90,7 @@ export const CandlestickChart = forwardRef<ChartHandle, CandlestickChartProps>(
       lower: ISeriesApi<'Line'>
     } | null>(null)
 
+    const lastIntervalRef = useRef<TimeInterval | null>(null)
     const [chartType, setChartType] = useState<ChartType>('candlestick')
     const [logScale, setLogScale] = useState(false)
     const [showBB, setShowBB] = useState(false)
@@ -289,8 +298,20 @@ export const CandlestickChart = forwardRef<ChartHandle, CandlestickChartProps>(
 
       candleSeriesRef.current.setData(candleData)
       lineSeriesRef.current.setData(lineData)
-      chartRef.current?.timeScale().fitContent()
-    }, [candles])
+
+      // Full history is loaded (1d/1w go back to 2014) — open on a sensible
+      // recent window and let the user pan/zoom into the rest. Only reset the
+      // view when the timeframe changes, never on a background data refresh.
+      if (lastIntervalRef.current !== interval) {
+        lastIntervalRef.current = interval
+        const defaultBars = DEFAULT_VISIBLE_BARS[interval] ?? 365
+        const len = candleData.length
+        chartRef.current?.timeScale().setVisibleLogicalRange({
+          from: Math.max(0, len - defaultBars),
+          to: len + 3,
+        })
+      }
+    }, [candles, interval])
 
     // ── Update MA overlays ────────────────────────────────────────────────
     useEffect(() => {
@@ -493,6 +514,17 @@ export const CandlestickChart = forwardRef<ChartHandle, CandlestickChartProps>(
             >
               Log
             </button>
+
+            {/* Drawing tools etc. live on TradingView — link out rather than embed */}
+            <a
+              href="https://www.tradingview.com/chart/?symbol=BINANCE%3ABTCUSDT"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 text-xs font-medium text-[#999999] hover:text-[#e0e0e0] hover:bg-[#1a1a2e] rounded transition-colors"
+              title="Open BTCUSDT on TradingView"
+            >
+              TV ↗
+            </a>
           </div>
         </div>
 

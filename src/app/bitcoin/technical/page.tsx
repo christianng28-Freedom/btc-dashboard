@@ -19,7 +19,7 @@ import { BTCDominanceChart } from '@/components/charts/BTCDominanceChart'
 import { RelativeStrengthChart } from '@/components/charts/RelativeStrengthChart'
 import { useRelativeStrength } from '@/hooks/useRelativeStrength'
 import { HalvingCountdown } from '@/components/widgets/HalvingCountdown'
-import { GaugeChart } from '@/components/widgets/GaugeChart'
+import { ScoreHero, IndicatorRow } from '@/components/dashboard/ScoreScale'
 import type { TimeInterval } from '@/lib/types'
 import { calcRSI } from '@/lib/calc/rsi'
 import { calcMACD } from '@/lib/calc/macd'
@@ -33,14 +33,16 @@ export default function TechnicalPage() {
   const [activeSubchart, setActiveSubchart] = useState<ActiveSubchart>('rsi')
 
   const { candles, isLoading, isError } = useCandles(interval, 500)
+  // Score is always computed from daily candles, independent of the chart interval
+  const { candles: dailyCandles } = useCandles('1d', 500)
   const { candles: historyCandles, isLoading: historyLoading } = useHistoricalData()
   const { candles: extendedCandles } = useExtendedHistory()
   const { data: dominanceData } = useDominance()
   const { data: relStr, isLoading: relStrLoading, isError: relStrError } = useRelativeStrength()
 
-  const dominancePct = dominanceData?.dominance ?? 50
+  const dominancePct = dominanceData?.dominance ?? null
 
-  const score = useTechnicalIndicators(candles, historyCandles, dominancePct)
+  const score = useTechnicalIndicators(dailyCandles, historyCandles, dominancePct)
 
   // Chart refs for time-axis sync
   const mainChartRef = useRef<ChartHandle>(null)
@@ -294,42 +296,35 @@ export default function TechnicalPage() {
         )}
       </div>
 
-      {/* ── Score breakdown ── */}
+      {/* ── Score breakdown — same design language as the fundamental tab ── */}
       {score && (
         <div className="bg-[#0d0d14] border border-[#1a1a2e] rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-xs font-bold text-[#e0e0e0] font-mono">Technical Composite Score Breakdown</div>
-              <div className="text-[10px] text-[#555566] font-mono">8 indicators weighted · 0 = value/buy · 100 = heat/sell</div>
+          <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-8 items-center">
+            <div className="lg:border-r lg:border-[#15151f] lg:pr-8">
+              <div className="text-xs uppercase tracking-widest text-[#666] font-mono mb-4">
+                Technical Composite Score
+              </div>
+              <ScoreHero
+                score={score.totalScore}
+                label={score.label}
+                color={score.color}
+                subtitle="8 indicators, daily candles · marker shows each input's position on the buy→sell axis"
+              />
             </div>
-            <GaugeChart score={score.totalScore} label={score.label} color={score.color} size={160} />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'RSI(14)', score: score.rsiScore, weight: '15%' },
-              { label: 'MACD Histogram', score: score.macdScore, weight: '10%' },
-              { label: 'Price vs 200SMA', score: score.priceVsMA200Score, weight: '15%' },
-              { label: 'Bollinger %B', score: score.bollingerScore, weight: '10%' },
-              { label: 'Stoch RSI %K', score: score.stochRsiScore, weight: '10%' },
-              { label: 'Pi Cycle Proximity', score: score.piCycleScore, weight: '15%' },
-              { label: '2-Year MA Position', score: score.twoYearMAScore, weight: '10%' },
-              { label: 'BTC Dominance', score: score.dominanceScore, weight: '15%' },
-            ].map((item) => {
-              const c = item.score <= 35 ? '#22c55e' : item.score <= 65 ? '#f59e0b' : '#ef4444'
-              return (
-                <div key={item.label} className="bg-[#111120] rounded-lg p-3">
-                  <div className="text-[9px] text-[#555566] font-mono uppercase tracking-widest">{item.label}</div>
-                  <div className="text-[9px] text-[#333344] font-mono mb-1">w: {item.weight}</div>
-                  <div className="text-base font-bold font-mono" style={{ color: c }}>{Math.round(item.score)}</div>
-                  <div className="mt-1 h-1 rounded-full bg-[#1a1a2e] overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${item.score}%`, backgroundColor: c }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
+            <div className="space-y-2">
+              {[
+                { label: 'RSI(14)', score: score.rsiScore, weight: '15%' },
+                { label: 'MACD Histogram', score: score.macdScore, weight: '10%' },
+                { label: 'Price vs 200SMA', score: score.priceVsMA200Score, weight: '15%' },
+                { label: 'Bollinger %B', score: score.bollingerScore, weight: '10%' },
+                { label: 'Stoch RSI %K', score: score.stochRsiScore, weight: '10%' },
+                { label: 'Pi Cycle Proximity', score: score.piCycleScore, weight: '15%' },
+                { label: '2-Year MA Position', score: score.twoYearMAScore, weight: '10%' },
+                { label: 'BTC Dominance', score: score.dominanceScore, weight: '15%' },
+              ].map((item) => (
+                <IndicatorRow key={item.label} label={item.label} score={item.score} weight={item.weight} />
+              ))}
+            </div>
           </div>
         </div>
       )}

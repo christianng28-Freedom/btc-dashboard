@@ -238,7 +238,7 @@ export function AssetTreemap({ btcMarketCap }: Props) {
                   width={node.w - 2}
                   height={node.h - 2}
                   fill={color}
-                  fillOpacity={isBTC ? 1 : 0.78}
+                  fillOpacity={isBTC ? 1 : 0.9}
                   rx={3}
                   stroke="#0a0a0f"
                   strokeWidth={2}
@@ -291,6 +291,32 @@ export function AssetTreemap({ btcMarketCap }: Props) {
             <div className="font-mono text-[#f97316]">{fmt(tooltip.size)}</div>
           </div>
         )}
+      </div>
+      {/* Legend — the small blocks (including Bitcoin) are unreadable as
+          geometry alone; every asset gets a labeled row with its share */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-3">
+        {[...assets]
+          .sort((a, b) => b.size - a.size)
+          .map((a) => {
+            const isBTC = a.name === 'Bitcoin'
+            return (
+              <div key={a.name} className="flex items-center gap-2 text-[11px] font-mono min-w-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-sm shrink-0"
+                  style={{ backgroundColor: ASSET_COLORS[a.name] ?? '#3b82f6' }}
+                />
+                <span className={`truncate ${isBTC ? 'text-[#f97316] font-bold' : 'text-[#999]'}`}>
+                  {getDisplayName(a.name)}
+                </span>
+                <span className={`ml-auto shrink-0 ${isBTC ? 'text-[#f97316] font-bold' : 'text-[#ccc]'}`}>
+                  {fmt(a.size)}
+                </span>
+                <span className="text-[#555] w-10 text-right shrink-0">
+                  {((a.size / total) * 100).toFixed(1)}%
+                </span>
+              </div>
+            )
+          })}
       </div>
       <div className="text-[11px] text-[#3a3a4a] mt-2">
         Global Derivatives ($715T notional) excluded — leverage contracts not directly comparable to real asset market caps

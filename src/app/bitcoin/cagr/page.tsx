@@ -237,7 +237,7 @@ function CustomChartTooltip({ active, payload, label, startYear, btcPrice, btcHo
 export default function CagrPage() {
   // Inputs
   const [btcPrice, setBtcPrice] = useState(87500)
-  const [btcHoldings, setBtcHoldings] = useState(8)
+  const [btcHoldings, setBtcHoldings] = useState(7)
   const [startYear, setStartYear] = useState(2026)
   const [endYear, setEndYear] = useState(2040)
   const [selectedCAGRs, setSelectedCAGRs] = useState<number[]>([10, 20, 30, 40, 50, 60])
@@ -296,7 +296,7 @@ export default function CagrPage() {
   // Reset
   function reset() {
     setBtcPrice(87500)
-    setBtcHoldings(8)
+    setBtcHoldings(7)
     setStartYear(2026)
     setEndYear(2040)
     setSelectedCAGRs([10, 20, 30, 40, 50, 60])

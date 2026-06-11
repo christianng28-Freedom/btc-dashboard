@@ -1,17 +1,34 @@
 'use client'
 import { useRef, useEffect } from 'react'
-import { createChart, ColorType, type IChartApi, type ISeriesApi, type LineData, type UTCTimestamp } from 'lightweight-charts'
+import {
+  createChart,
+  ColorType,
+  PriceScaleMode,
+  type IChartApi,
+  type ISeriesApi,
+  type LineData,
+  type UTCTimestamp,
+} from 'lightweight-charts'
 
 interface Props {
   equity: { time: number; value: number }[]
+  buyHoldEquity: { time: number; value: number }[]
   totalReturn: number
+  logScale?: boolean
   height?: number
 }
 
-export function EquityCurve({ equity, totalReturn, height = 140 }: Props) {
+function toLineData(points: { time: number; value: number }[]): LineData[] {
+  return points
+    .filter((e, i, arr) => i === 0 || e.time !== arr[i - 1].time)
+    .map((e) => ({ time: e.time as UTCTimestamp, value: e.value }))
+}
+
+export function EquityCurve({ equity, buyHoldEquity, totalReturn, logScale = false, height = 140 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null)
+  const bhSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
 
   const isPositive = totalReturn >= 0
   const lineColor = isPositive ? '#22c55e' : '#ef4444'
@@ -31,12 +48,20 @@ export function EquityCurve({ equity, totalReturn, height = 140 }: Props) {
         horzLines: { color: '#1a1a2e' },
       },
       rightPriceScale: { borderVisible: false, textColor: '#555' },
-      timeScale: { borderVisible: false, visible: false },
+      timeScale: { borderVisible: false, visible: true, timeVisible: false },
       crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
       handleScroll: false,
       handleScale: false,
       width: container.clientWidth,
       height,
+    })
+
+    // Buy & hold benchmark first so the strategy renders on top
+    bhSeriesRef.current = chartRef.current.addLineSeries({
+      color: '#8884d8',
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
     })
 
     seriesRef.current = chartRef.current.addAreaSeries({
@@ -48,11 +73,8 @@ export function EquityCurve({ equity, totalReturn, height = 140 }: Props) {
       lastValueVisible: false,
     })
 
-    const data: LineData[] = equity
-      .filter((e, i, arr) => i === 0 || e.time !== arr[i - 1].time)
-      .map(e => ({ time: e.time as UTCTimestamp, value: e.value }))
-
-    seriesRef.current.setData(data)
+    seriesRef.current.setData(toLineData(equity))
+    bhSeriesRef.current.setData(toLineData(buyHoldEquity))
     chartRef.current.timeScale().fitContent()
 
     const ro = new ResizeObserver(() => {
@@ -70,17 +92,21 @@ export function EquityCurve({ equity, totalReturn, height = 140 }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Update data without recreating chart
+  // Update data without recreating the chart
   useEffect(() => {
     if (!seriesRef.current || equity.length === 0) return
-    const data: LineData[] = equity
-      .filter((e, i, arr) => i === 0 || e.time !== arr[i - 1].time)
-      .map(e => ({ time: e.time as UTCTimestamp, value: e.value }))
-    seriesRef.current.setData(data)
+    seriesRef.current.setData(toLineData(equity))
+    bhSeriesRef.current?.setData(toLineData(buyHoldEquity))
     chartRef.current?.timeScale().fitContent()
-  }, [equity])
+  }, [equity, buyHoldEquity])
 
-  // Update colors when return flips
+  // Log scale for long windows — a decade of compounding is unreadable linear
+  useEffect(() => {
+    chartRef.current?.priceScale('right').applyOptions({
+      mode: logScale ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal,
+    })
+  }, [logScale])
+
   useEffect(() => {
     seriesRef.current?.applyOptions({ topColor, lineColor })
   }, [topColor, lineColor])

@@ -6,17 +6,17 @@
     "tier": "legal-tender",
     "tierLabel": "Legal Tender",
     "since": "2021-09-07",
-    "details": "First country to adopt Bitcoin as legal tender via the Bitcoin Law. The government distributes BTC via the Chivo wallet and holds a national Bitcoin reserve exceeding 5,700 BTC.",
+    "details": "First country to adopt Bitcoin as legal tender (2021). In January 2025, under a $1.4B IMF agreement, Congress made private-sector acceptance voluntary and ended BTC tax payments — Bitcoin keeps nominal legal-tender status but is no longer defined as 'currency'. The government continues accumulating, with a national reserve above 6,000 BTC.",
     "flag": "🇸🇻"
   },
   {
     "name": "Central African Republic",
     "alpha2": "CF",
     "numericCode": "140",
-    "tier": "legal-tender",
-    "tierLabel": "Legal Tender",
-    "since": "2022-04-27",
-    "details": "Second country to adopt Bitcoin as legal tender. Practical adoption remains limited by low internet connectivity (~11% penetration), but the law marks a significant symbolic step for financial sovereignty in a dollarised economy.",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "Adopted Bitcoin as legal tender in April 2022 — the second country ever — but repealed the law in 2023 under pressure from the regional central bank (BEAC) and CEMAC currency-union rules. Crypto remains legal to hold; the Sango Coin project continues at reduced ambition.",
     "flag": "🇨🇫"
   },
   {
@@ -26,7 +26,7 @@
     "tier": "permissive",
     "tierLabel": "Permissive",
     "since": "2025-01-23",
-    "details": "Under Trump's 2025 executive orders, the US established a Strategic Bitcoin Reserve and created a Presidential Working Group on Digital Assets. Spot Bitcoin and Ether ETFs are approved. SEC under new leadership is moving toward clear regulatory frameworks.",
+    "details": "Strategic Bitcoin Reserve (~325k BTC) with a custody framework formalised in March 2026. GENIUS Act (July 2025) created the federal stablecoin framework; the CLARITY market-structure act passed the House 294-134 and advanced through Senate Banking in May 2026. SEC dropped its major crypto enforcement cases in 2025.",
     "flag": "🇺🇸"
   },
   {
@@ -106,8 +106,28 @@
     "tier": "permissive",
     "tierLabel": "Permissive",
     "since": "2023-03-01",
-    "details": "Brazil's Virtual Asset Service Provider Act established formal licensing and oversight under the Central Bank. Brazil is Latin America's largest crypto market by volume and hosts major exchange operations.",
+    "details": "Brazil's Virtual Asset Service Provider Act established formal licensing under the Central Bank, and Congress reintroduced the RESBit bill in February 2026 proposing a sovereign reserve of up to 1 million BTC over five years. Brazil is Latin America's largest crypto market by volume.",
     "flag": "🇧🇷"
+  },
+  {
+    "name": "Hong Kong",
+    "alpha2": "HK",
+    "numericCode": "344",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2024-04-30",
+    "details": "First major Asian hub with retail spot Bitcoin and Ether ETFs (April 2024). The SFC's ASPIRe roadmap is expanding licensed virtual-asset services, and the Stablecoins Ordinance (August 2025) created an HKMA licensing regime for fiat-referenced issuers.",
+    "flag": "🇭🇰"
+  },
+  {
+    "name": "Bhutan",
+    "alpha2": "BT",
+    "numericCode": "064",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "Quiet sovereign holder: state-owned Druk Holding has mined Bitcoin with hydropower since around 2019, with disclosed holdings in the five figures of BTC at times — among the largest government stashes relative to GDP. Bhutan sells portions to fund public spending.",
+    "flag": "🇧🇹"
   },
   {
     "name": "United Kingdom",
@@ -323,10 +343,10 @@
     "name": "Pakistan",
     "alpha2": "PK",
     "numericCode": "586",
-    "tier": "restrictive",
-    "tierLabel": "Restrictive",
-    "since": null,
-    "details": "Pakistan's SBP has instructed banks not to support crypto transactions. Despite informal bans, P2P trading remains active. Pakistan ranked highly in Chainalysis global crypto adoption indexes due to grassroots usage.",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": "2025-05-28",
+    "details": "Sharp pivot from years of central-bank restrictions: Pakistan announced a government-led Strategic Bitcoin Reserve in 2025, allocated surplus power for mining, and formed the Pakistan Crypto Council to build a licensing framework. Grassroots P2P adoption was already among the world's highest.",
     "flag": "🇵🇰"
   },
   {

@@ -146,7 +146,11 @@ function CheckOnChainIframe({ src, title }: { src: string; title: string }) {
         <iframe
           src={src}
           title={title}
-          loading="eager"
+          // Lazy: ~20 Plotly iframes loading eagerly all compete for bandwidth
+          // on first visit, delaying the charts actually on screen. The
+          // browser preloads ahead of the viewport, and the persistent panel
+          // keeps anything loaded alive across tab switches.
+          loading="lazy"
           scrolling="no"
           style={{
             width: NATIVE_W,

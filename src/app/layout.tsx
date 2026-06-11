@@ -9,6 +9,7 @@ import { TopBar } from '@/components/layout/TopBar'
 import { NavSidebar } from '@/components/layout/NavSidebar'
 import { MainArea } from '@/components/layout/MainArea'
 import { RegisterSW } from '@/components/layout/RegisterSW'
+import { AuroraBackground } from '@/components/layout/AuroraBackground'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -56,6 +57,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-[#05070A] text-[#e0e0e0] min-h-screen">
         <RegisterSW />
+        <AuroraBackground />
         <QueryProvider>
           <ThemeProvider>
             <WebSocketProvider>

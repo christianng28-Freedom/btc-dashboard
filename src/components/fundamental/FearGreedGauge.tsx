@@ -1,189 +1,109 @@
 'use client'
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts'
+import { BandScale, LabelChip } from '@/components/dashboard/ScoreScale'
 import type { FearGreedEntry } from '@/lib/api/alternative-me'
 
 interface Props {
   current: FearGreedEntry | null
-  sparkline: FearGreedEntry[]  // 30 days oldest → newest
+  sparkline: FearGreedEntry[] // 30 days oldest → newest
   isLoading?: boolean
 }
 
-const CLASSIFICATIONS: Record<string, { color: string; bg: string }> = {
-  'Extreme Fear':  { color: '#3b82f6', bg: '#1d4ed818' },
-  'Fear':          { color: '#22c55e', bg: '#15803d18' },
-  'Neutral':       { color: '#f59e0b', bg: '#b4530918' },
-  'Greed':         { color: '#f97316', bg: '#c2410c18' },
-  'Extreme Greed': { color: '#ef4444', bg: '#b91c1c18' },
+// Alternative.me zone boundaries (≠ the score-engine zones)
+const FG_TICKS = [25, 45, 55, 75]
+
+// Color by position on the contrarian axis — same semantics as the
+// fundamental score's indicator rows (extreme fear = green = accumulation)
+function fgColor(value: number): string {
+  return value > 65 ? '#ef4444' : value > 35 ? '#f59e0b' : '#22c55e'
 }
-
-function getColors(classification: string) {
-  return CLASSIFICATIONS[classification] ?? { color: '#888888', bg: '#88888818' }
-}
-
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-  const rad = (angleDeg * Math.PI) / 180
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
-}
-
-function arcPath(cx: number, cy: number, r: number, start: number, end: number): string {
-  const s = polarToCartesian(cx, cy, r, end)
-  const e = polarToCartesian(cx, cy, r, start)
-  const large = end - start > 180 ? 1 : 0
-  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y}`
-}
-
-const SEGMENTS = [
-  { from: 0,  to: 25,  color: '#3b82f6' },  // Extreme Fear
-  { from: 25, to: 45,  color: '#22c55e' },  // Fear
-  { from: 45, to: 55,  color: '#f59e0b' },  // Neutral
-  { from: 55, to: 75,  color: '#f97316' },  // Greed
-  { from: 75, to: 100, color: '#ef4444' },  // Extreme Greed
-]
-
-// Zone labels shown at gauge edges
-const ZONE_LABELS = [
-  { x: 'left',  label: 'Fear' },
-  { x: 'right', label: 'Greed' },
-]
 
 export function FearGreedGauge({ current, sparkline, isLoading }: Props) {
-  const value = current ? parseInt(current.value, 10) : 50
+  const value = current ? parseInt(current.value, 10) : null
   const classification = current?.value_classification ?? 'Neutral'
-  const { color, bg } = getColors(classification)
 
-  // SVG geometry — cy at bottom of arc so all text fits above it
-  const W = 220
-  const H = 140    // total SVG height
-  const cx = W / 2
-  const cy = H - 20  // pivot sits 20px from SVG bottom → room for pivot dot + min/max labels
-  const r  = 95
-  const trackW = 18
+  if (isLoading || value == null) {
+    return (
+      <div className="h-[160px] flex items-center justify-center rounded-lg bg-[#111120] border border-[#1a1a2e]">
+        <span className="text-[#555] text-xs font-mono animate-pulse">awaiting data</span>
+      </div>
+    )
+  }
 
-  const needleAngle = -180 + (value / 100) * 180
-
-  // Score text: center vertically in the arc area (between top of arc and pivot)
-  const scoreY = cy - r * 0.42
-
+  const color = fgColor(value)
   const sparkData = sparkline.map((d) => ({ v: parseInt(d.value, 10) }))
+  const sparkVals = sparkData.map((d) => d.v)
+  const stats =
+    sparkVals.length > 0
+      ? {
+          low: Math.min(...sparkVals),
+          high: Math.max(...sparkVals),
+          avg: Math.round(sparkVals.reduce((s, v) => s + v, 0) / sparkVals.length),
+        }
+      : null
 
   return (
-    <div className="flex flex-col items-center gap-2 w-full">
-
-      {/* ── Gauge SVG ── */}
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-        {/* Background track */}
-        <path
-          d={arcPath(cx, cy, r, -180, 0)}
-          fill="none"
-          stroke="#111120"
-          strokeWidth={trackW + 4}
-          strokeLinecap="round"
-        />
-        {/* Dim colour-band segments */}
-        {SEGMENTS.map((seg) => {
-          const sa = -180 + (seg.from / 100) * 180
-          const ea = -180 + (seg.to  / 100) * 180
-          return (
-            <path
-              key={seg.from}
-              d={arcPath(cx, cy, r, sa, ea)}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth={trackW}
-              strokeLinecap="butt"
-              opacity={0.25}
-            />
-          )
-        })}
-        {/* Active arc */}
-        <path
-          d={arcPath(cx, cy, r, -180, needleAngle)}
-          fill="none"
-          stroke={color}
-          strokeWidth={trackW}
-          strokeLinecap="round"
-          opacity={0.9}
-        />
-
-        {/* Needle */}
-        {(() => {
-          const rad = (needleAngle * Math.PI) / 180
-          const len = r * 0.78
-          const nx  = cx + len * Math.cos(rad)
-          const ny  = cy + len * Math.sin(rad)
-          return (
-            <>
-              <line
-                x1={cx} y1={cy} x2={nx} y2={ny}
-                stroke="#c0c0d0"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-              />
-              <circle cx={cx} cy={cy} r={7} fill="#1a1a2e" stroke="#c0c0d0" strokeWidth={2} />
-            </>
-          )
-        })()}
-
-        {/* Score number — centred in the arc area */}
-        <text
-          x={cx}
-          y={scoreY}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={56}
-          fontWeight="bold"
-          fontFamily="JetBrains Mono, monospace"
-          fill={color}
-        >
-          {isLoading ? '–' : value}
-        </text>
-
-        {/* Zone edge labels */}
-        <text
-          x={cx - r - 6} y={cy + 2}
-          textAnchor="end"
-          dominantBaseline="middle"
-          fontSize={11}
-          fontFamily="monospace"
-          fill="#3b82f6"
-          opacity={0.7}
-        >
-          Fear
-        </text>
-        <text
-          x={cx + r + 6} y={cy + 2}
-          textAnchor="start"
-          dominantBaseline="middle"
-          fontSize={11}
-          fontFamily="monospace"
-          fill="#ef4444"
-          opacity={0.7}
-        >
-          Greed
-        </text>
-      </svg>
-
-      {/* ── Classification badge — outside SVG, no clipping ── */}
-      <div
-        className="px-4 py-1 rounded-full border text-sm font-bold font-mono tracking-wide"
-        style={{ color, backgroundColor: bg, borderColor: `${color}40` }}
-      >
-        {isLoading ? 'Loading…' : classification}
+    <div className="flex flex-col gap-5 w-full">
+      {/* ── Hero — same language as the fundamental score card ── */}
+      <div>
+        <div className="flex items-end gap-4 flex-wrap">
+          <span className="text-6xl font-mono font-bold leading-none" style={{ color }}>
+            {value}
+          </span>
+          <div className="pb-1">
+            <LabelChip label={classification} color={color} large />
+          </div>
+        </div>
+        <div className="mt-4">
+          <BandScale score={value} height={10} ticks={FG_TICKS} />
+          <div className="flex justify-between text-[9px] font-mono uppercase tracking-widest text-[#555] mt-0.5">
+            <span className="text-[#22c55e]">Extreme Fear</span>
+            <span>Neutral</span>
+            <span className="text-[#ef4444]">Extreme Greed</span>
+          </div>
+        </div>
+        <div className="text-[10px] text-[#555] font-mono mt-3">
+          Contrarian read: extreme fear has historically marked accumulation zones, extreme greed has preceded tops
+        </div>
       </div>
+
+      {/* ── 30-day stats ── */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-[#111120] rounded-lg px-3 py-2 text-center border border-[#1a1a2e]">
+            <div className="text-[9px] text-[#555] font-mono uppercase tracking-widest">30d Low</div>
+            <div className="text-base font-bold font-mono mt-0.5" style={{ color: fgColor(stats.low) }}>
+              {stats.low}
+            </div>
+          </div>
+          <div className="bg-[#111120] rounded-lg px-3 py-2 text-center border border-[#1a1a2e]">
+            <div className="text-[9px] text-[#555] font-mono uppercase tracking-widest">30d Avg</div>
+            <div className="text-base font-bold font-mono mt-0.5" style={{ color: fgColor(stats.avg) }}>
+              {stats.avg}
+            </div>
+          </div>
+          <div className="bg-[#111120] rounded-lg px-3 py-2 text-center border border-[#1a1a2e]">
+            <div className="text-[9px] text-[#555] font-mono uppercase tracking-widest">30d High</div>
+            <div className="text-base font-bold font-mono mt-0.5" style={{ color: fgColor(stats.high) }}>
+              {stats.high}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 30-day sparkline ── */}
       {sparkData.length > 0 && (
-        <div className="w-full mt-1">
-          <div className="text-[10px] text-[#555] uppercase tracking-widest mb-1.5 text-center font-mono">
+        <div className="w-full">
+          <div className="text-[10px] text-[#555] uppercase tracking-widest mb-1.5 font-mono">
             30-Day History
           </div>
           {/* Hard pixel height prevents Recharts width/height=-1 warning */}
-          <div style={{ width: '100%', height: 56 }}>
-            <ResponsiveContainer width="100%" height={56}>
+          <div style={{ width: '100%', height: 72 }}>
+            <ResponsiveContainer width="100%" height={72}>
               <AreaChart data={sparkData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
                 <defs>
                   <linearGradient id="fgGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={color} stopOpacity={0.35} />
+                    <stop offset="5%" stopColor={color} stopOpacity={0.35} />
                     <stop offset="95%" stopColor={color} stopOpacity={0} />
                   </linearGradient>
                 </defs>

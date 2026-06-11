@@ -8,7 +8,7 @@ import { FedFundsChart } from '@/components/fundamental/FedFundsChart'
 import { InflationChart } from '@/components/fundamental/InflationChart'
 import { M2BTCChart } from '@/components/fundamental/M2BTCChart'
 import { TreasuryYieldChart } from '@/components/fundamental/TreasuryYieldChart'
-import { GaugeChart } from '@/components/widgets/GaugeChart'
+import { ScoreHero, IndicatorRow } from '@/components/dashboard/ScoreScale'
 import { useFearGreed } from '@/hooks/useFearGreed'
 import { useFundamentalData } from '@/hooks/useFundamentalData'
 import { useMacroData } from '@/hooks/useMacroData'
@@ -96,64 +96,28 @@ export default function FundamentalPage() {
             </div>
 
             {fundamentalScore ? (
-              <div className="flex flex-col items-center gap-4 flex-1">
-                <GaugeChart
+              <div className="flex flex-col gap-5 flex-1">
+                <ScoreHero
                   score={fundamentalScore.totalScore}
                   label={fundamentalScore.label}
                   color={fundamentalScore.color}
-                  size={200}
+                  subtitle={`${fundamentalScore.indicatorCount} of 9 indicators · marker shows each input's position on the buy→sell axis`}
                 />
-
-                <div
-                  className="px-5 py-1.5 rounded-full border text-sm font-bold font-mono tracking-wide"
-                  style={{
-                    color: fundamentalScore.color,
-                    backgroundColor: `${fundamentalScore.color}18`,
-                    borderColor: `${fundamentalScore.color}40`,
-                  }}
-                >
-                  {fundamentalScore.label}
-                </div>
 
                 {/* Indicator breakdown — all 9 */}
                 <div className="space-y-2 w-full">
-                  {/* Separator labels */}
                   <div className="text-[9px] font-mono text-[#444] uppercase tracking-widest">
                     Sentiment &amp; Leverage
                   </div>
-                  {scoreIndicators.slice(0, 3).map((item) => {
-                    const barColor = item.score > 65 ? '#ef4444' : item.score > 35 ? '#f59e0b' : '#22c55e'
-                    return (
-                      <div key={item.label} className="flex items-center gap-2 text-[11px] font-mono">
-                        <span className="text-[#777] w-28 shrink-0">{item.label}</span>
-                        <div className="flex-1 h-1.5 bg-[#1a1a2e] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${item.score}%`, backgroundColor: barColor }}
-                          />
-                        </div>
-                        <span className="text-[#555] w-7 text-right shrink-0">{item.weight}</span>
-                      </div>
-                    )
-                  })}
+                  {scoreIndicators.slice(0, 3).map((item) => (
+                    <IndicatorRow key={item.label} label={item.label} score={item.score} weight={item.weight} />
+                  ))}
                   <div className="text-[9px] font-mono text-[#444] uppercase tracking-widest pt-1">
                     Macro Environment
                   </div>
-                  {scoreIndicators.slice(3).map((item) => {
-                    const barColor = item.score > 65 ? '#ef4444' : item.score > 35 ? '#f59e0b' : '#22c55e'
-                    return (
-                      <div key={item.label} className="flex items-center gap-2 text-[11px] font-mono">
-                        <span className="text-[#777] w-28 shrink-0">{item.label}</span>
-                        <div className="flex-1 h-1.5 bg-[#1a1a2e] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${item.score}%`, backgroundColor: barColor }}
-                          />
-                        </div>
-                        <span className="text-[#555] w-7 text-right shrink-0">{item.weight}</span>
-                      </div>
-                    )
-                  })}
+                  {scoreIndicators.slice(3).map((item) => (
+                    <IndicatorRow key={item.label} label={item.label} score={item.score} weight={item.weight} />
+                  ))}
                 </div>
 
                 {/* Quick stats strip */}
@@ -183,10 +147,6 @@ export default function FundamentalPage() {
                       </div>
                     </>
                   )}
-                </div>
-
-                <div className="text-[10px] text-[#444] font-mono">
-                  {fundamentalScore.indicatorCount} of 9 indicators
                 </div>
               </div>
             ) : fundError ? (

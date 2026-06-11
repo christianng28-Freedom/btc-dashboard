@@ -1,5 +1,104 @@
 [
   {
+    "id": "us-clarity-senate-2026",
+    "date": "2026-05-14",
+    "country": "United States",
+    "region": "Americas",
+    "title": "Senate Banking Committee Advances CLARITY Act",
+    "description": "The Senate Banking Committee advanced the Digital Asset Market Clarity (CLARITY) Act by a 15-9 vote, with all 13 Republicans joined by two Democrats. The market-structure bill would grant the CFTC exclusive jurisdiction over digital commodity spot markets while the SEC retains investment-contract assets. Outstanding issues include an ethics provision on officials' crypto ties before a floor vote.",
+    "sentiment": "bullish",
+    "category": "Framework",
+    "source": "Senate Banking Committee"
+  },
+  {
+    "id": "us-sbr-framework-2026",
+    "date": "2026-03-01",
+    "country": "United States",
+    "region": "Americas",
+    "title": "US Strategic Bitcoin Reserve Custody Framework Formalised",
+    "description": "In March 2026 the US formalised the custody and governance framework behind the Strategic Bitcoin Reserve, with publicly reported government holdings around 325,000–328,000 BTC. The framework codifies long-term hold policy for seized and acquired coins, while the BITCOIN Act — mandating purchase of up to 1 million BTC over five years with a 20-year minimum hold — remains pending in Congress.",
+    "sentiment": "bullish",
+    "category": "Framework",
+    "source": "US Treasury"
+  },
+  {
+    "id": "brazil-resbit-2026",
+    "date": "2026-02-01",
+    "country": "Brazil",
+    "region": "Americas",
+    "title": "Brazil Reintroduces RESBit National Bitcoin Reserve Bill",
+    "description": "Brazil's Congress reintroduced legislation proposing a sovereign Bitcoin reserve (RESBit) that would accumulate up to 1 million BTC over five years — roughly 5% of total supply — managed by the Central Bank and Finance Ministry. The bill positions Brazil as the largest emerging market pursuing strategic Bitcoin accumulation.",
+    "sentiment": "bullish",
+    "category": "Framework",
+    "source": "Câmara dos Deputados"
+  },
+  {
+    "id": "hk-stablecoin-2025",
+    "date": "2025-08-01",
+    "country": "Hong Kong",
+    "region": "Asia-Pacific",
+    "title": "Hong Kong Stablecoins Ordinance Takes Effect",
+    "description": "Hong Kong's Stablecoins Ordinance came into force, requiring HKMA licences for issuers of fiat-referenced stablecoins issued in Hong Kong or referencing the HK dollar. The regime — full reserve backing, redemption at par, and ongoing disclosure — anchors Hong Kong's bid to be Asia's regulated digital-asset hub.",
+    "sentiment": "neutral",
+    "category": "Framework",
+    "source": "HKMA"
+  },
+  {
+    "id": "us-genius-act-2025",
+    "date": "2025-07-18",
+    "country": "United States",
+    "region": "Americas",
+    "title": "GENIUS Act Signed — US Stablecoin Framework",
+    "description": "President Trump signed the GENIUS Act, the first comprehensive US federal framework for payment stablecoins. Issuers must back tokens 1:1 with cash or short-term Treasuries and publish monthly reserve disclosures. The law was widely read as the first leg of full US digital-asset regulatory clarity.",
+    "sentiment": "bullish",
+    "category": "Framework",
+    "source": "White House"
+  },
+  {
+    "id": "us-clarity-house-2025",
+    "date": "2025-07-17",
+    "country": "United States",
+    "region": "Americas",
+    "title": "CLARITY Act Passes US House 294-134",
+    "description": "The House passed the Digital Asset Market Clarity Act with a strong bipartisan majority, establishing the first comprehensive US market-structure framework for digital assets and splitting oversight between the CFTC (digital commodities) and SEC (investment contracts).",
+    "sentiment": "bullish",
+    "category": "Framework",
+    "source": "US House of Representatives"
+  },
+  {
+    "id": "pakistan-sbr-2025",
+    "date": "2025-05-28",
+    "country": "Pakistan",
+    "region": "Asia-Pacific",
+    "title": "Pakistan Announces Strategic Bitcoin Reserve",
+    "description": "Pakistan announced a government-led Strategic Bitcoin Reserve and allocated surplus power capacity for Bitcoin mining, a sharp pivot from years of central-bank restrictions. The newly formed Pakistan Crypto Council is driving licensing and a national digital-asset framework.",
+    "sentiment": "bullish",
+    "category": "Framework",
+    "source": "Government of Pakistan"
+  },
+  {
+    "id": "sec-coinbase-dismissal-2025",
+    "date": "2025-02-27",
+    "country": "United States",
+    "region": "Americas",
+    "title": "SEC Dismisses Coinbase Enforcement Action",
+    "description": "The SEC dismissed its civil enforcement action against Coinbase with prejudice, reversing the agency's enforcement-led approach to crypto. With the new Crypto Task Force chartered to build a clear framework, the SEC subsequently wound down most major crypto enforcement cases, including Ripple.",
+    "sentiment": "bullish",
+    "category": "Exchange",
+    "source": "SEC"
+  },
+  {
+    "id": "el-salvador-amendment-2025",
+    "date": "2025-01-29",
+    "country": "El Salvador",
+    "region": "Americas",
+    "title": "El Salvador Makes Bitcoin Acceptance Voluntary (IMF Deal)",
+    "description": "El Salvador's Congress amended the Bitcoin Law 55-2, making private-sector acceptance of BTC voluntary and ending its use for tax payments, as required by a $1.4B IMF loan agreement. Bitcoin keeps nominal legal-tender designation but is no longer defined as 'currency'. The government continues accumulating BTC for its national reserve despite the rollback.",
+    "sentiment": "bearish",
+    "category": "Legal Tender",
+    "source": "Asamblea Legislativa de El Salvador"
+  },
+  {
     "id": "us-strategic-reserve-2025",
     "date": "2025-03-07",
     "country": "United States",
