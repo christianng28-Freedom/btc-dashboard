@@ -73,11 +73,10 @@ export default function MorningBriefPage() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
-  const { data, isLoading, isError, refetch, isFetching, forceRegenerate } = useMorningBriefing()
+  const { data, isLoading, isError, refetch, isFetching } = useMorningBriefing()
   const { permissionStatus, requestPermission } = useNotifications()
   const { toasts, show: showToast } = useToast()
 
-  const [isRegenerating, setIsRegenerating] = useState(false)
   const prevSourceRef = useRef<string | null>(null)
 
   // Fire browser notification when a fresh brief is generated
@@ -103,20 +102,6 @@ export default function MorningBriefPage() {
       showToast("Today's briefing is already current", 'info')
     } else if (result.data?.source === 'generated') {
       showToast('Briefing refreshed', 'success')
-    }
-  }
-
-  async function handleForceRegenerate() {
-    setIsRegenerating(true)
-    try {
-      const fresh = await forceRegenerate()
-      if (fresh.source === 'generated') {
-        showToast('New briefing generated', 'success', 5000)
-      }
-    } catch {
-      showToast('Regeneration failed — check API key and quota', 'warning', 5000)
-    } finally {
-      setIsRegenerating(false)
     }
   }
 
@@ -197,38 +182,22 @@ export default function MorningBriefPage() {
               </button>
             )}
 
-            {/* Force regenerate — uses 1 daily API call */}
-            <button
-              onClick={handleForceRegenerate}
-              disabled={isRegenerating || isFetching}
-              title="Force regenerate — uses 1 of your 20 daily API calls"
-              className="px-2.5 py-1.5 rounded-md border border-white/[0.06] text-[10px] text-white/40 hover:text-[#f59e0b] hover:border-[#f59e0b]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-            >
-              <svg
-                className={`w-3 h-3 ${isRegenerating ? 'animate-spin' : ''}`}
-                viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M13 10a3 3 0 11-6 0 3 3 0 016 0zM3.05 11a8 8 0 1014.9 0" />
-              </svg>
-              {isRegenerating ? 'Generating…' : 'Regenerate'}
-            </button>
-
-            {/* Refresh — checks for updates, free */}
+            {/* Refresh — checks for updates, free (cache hit unless today's brief
+                doesn't exist yet, in which case it generates the one daily brief) */}
             <button
               onClick={handleRefresh}
-              disabled={isFetching || isRegenerating}
-              title="Check for updates (uses cached data if brief is already current)"
+              disabled={isFetching}
+              title="Check for today's brief (uses cached data if already generated)"
               className="px-3 py-1.5 rounded-md border border-white/[0.08] text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               <svg
-                className={`w-3 h-3 ${isFetching && !isRegenerating ? 'animate-spin' : ''}`}
+                className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`}
                 viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"
               >
                 <path strokeLinecap="round" strokeLinejoin="round"
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {isFetching && !isRegenerating ? 'Checking…' : 'Refresh'}
+              {isFetching ? 'Checking…' : 'Refresh'}
             </button>
           </div>
         </div>

@@ -172,10 +172,29 @@ async function callGemini(todayHKT: string): Promise<string> {
   return generateWithGemini(BRIEFING_PROMPT(todayHKT, deskContext), { useSearch: true })
 }
 
+// Force-regeneration bypasses the daily cache and costs a Gemini call, so it's
+// gated behind the CRON_SECRET — same auth the analyst-agent run endpoint uses.
+// Accepts the Vercel-cron "Bearer <secret>" header or a "?key=<secret>" param
+// (the desk/brief key button). Normal cached/lazy reads stay public.
+function isAuthorizedForce(request: Request): boolean {
+  const secret = process.env.CRON_SECRET
+  if (!secret) {
+    // No secret configured: only allow in local dev, never in production
+    return process.env.NODE_ENV !== 'production'
+  }
+  if (request.headers.get('authorization') === `Bearer ${secret}`) return true
+  return new URL(request.url).searchParams.get('key') === secret
+}
+
 export async function GET(request: Request) {
   const todayHKT = toHKTDateString(new Date())
   const apiKey = process.env.GEMINI_API_KEY
   const force = new URL(request.url).searchParams.get('force') === '1'
+
+  // Reject unauthorized force-regeneration before doing any work
+  if (force && !isAuthorizedForce(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   // 1. Check cache (skip if ?force=1)
   const cache = await readCache()

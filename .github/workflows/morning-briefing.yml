@@ -5,6 +5,10 @@
 # 00:00 UTC = 08:00 HKT (UTC+8, no DST). The endpoint writes the result to the
 # durable Upstash KV store, so every visit for the rest of the HKT day is a
 # cache hit.
+#
+# force=1 bypasses the cache and is gated behind CRON_SECRET, so this job
+# authenticates with the same "Bearer <secret>" header the agent crons use.
+# Requires the repo secret CRON_SECRET to match the Vercel env var.
 
 name: Morning briefing
 
@@ -26,6 +30,7 @@ jobs:
           echo "Pre-generating morning brief"
           http_code=$(curl -sS -o response.json -w "%{http_code}" \
             --max-time 290 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "$BASE_URL/api/briefing?force=1")
           echo "HTTP $http_code"
           head -c 500 response.json || true
