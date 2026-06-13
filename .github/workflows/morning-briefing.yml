@@ -1,0 +1,34 @@
+# Pre-generates the daily Morning Brief so it's cached and ready before the
+# first page visit. Vercel Hobby rejects sub-daily crons in vercel.json, so
+# GitHub Actions is the scheduler (same pattern as analyst-agents.yml).
+#
+# 00:00 UTC = 08:00 HKT (UTC+8, no DST). The endpoint writes the result to the
+# durable Upstash KV store, so every visit for the rest of the HKT day is a
+# cache hit.
+
+name: Morning briefing
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 08:00 HKT daily
+  workflow_dispatch:
+
+env:
+  BASE_URL: https://btc-dashboard-five.vercel.app
+
+jobs:
+  generate-briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger briefing generation
+        run: |
+          set -o pipefail
+          echo "Pre-generating morning brief"
+          http_code=$(curl -sS -o response.json -w "%{http_code}" \
+            --max-time 290 \
+            "$BASE_URL/api/briefing?force=1")
+          echo "HTTP $http_code"
+          head -c 500 response.json || true
+          if [ "$http_code" != "200" ]; then
+            exit 1
+          fi

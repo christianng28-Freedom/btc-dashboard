@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
 import { generateWithGemini } from '@/lib/server/gemini'
-import { latestReport } from '@/lib/server/store'
+import { getStore, latestReport } from '@/lib/server/store'
 
 // Always run dynamically — never statically cache at build time
 export const dynamic = 'force-dynamic'
@@ -10,8 +8,10 @@ export const dynamic = 'force-dynamic'
 // before failing, so a full retry cycle needs well over the 60s default
 export const maxDuration = 300
 
-// Vercel's serverless filesystem is read-only except /tmp
-const CACHE_PATH = process.env.VERCEL ? '/tmp/morning-briefing.json' : join(process.cwd(), 'src/data/morning-briefing.json')
+// Persist in the durable KV store (Upstash in prod) rather than /tmp, which is
+// ephemeral and per-lambda-instance on Vercel — that ephemerality is why the
+// brief kept regenerating instead of caching for the day.
+const CACHE_KEY = 'morning-briefing'
 
 interface BriefingCache {
   generatedAt: string  // ISO UTC string
@@ -30,22 +30,20 @@ function toHKTDateString(date: Date): string {
   return new Date(hktMs).toISOString().slice(0, 10)
 }
 
-function readCache(): BriefingCache | null {
+async function readCache(): Promise<BriefingCache | null> {
   try {
-    const raw = readFileSync(CACHE_PATH, 'utf-8').trim()
-    if (!raw || raw === '{}') return null
-    const parsed = JSON.parse(raw) as Partial<BriefingCache>
-    if (!parsed.generatedAt || !parsed.content) return null
+    const parsed = await getStore().get<Partial<BriefingCache>>(CACHE_KEY)
+    if (!parsed || !parsed.generatedAt || !parsed.content) return null
     return parsed as BriefingCache
   } catch {
     return null
   }
 }
 
-function writeCache(content: string): void {
+async function writeCache(content: string): Promise<void> {
   try {
     const cache: BriefingCache = { generatedAt: new Date().toISOString(), content }
-    writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2), 'utf-8')
+    await getStore().set(CACHE_KEY, cache)
   } catch (err) {
     console.warn('[/api/briefing] Cache write failed:', err)
   }
@@ -180,7 +178,7 @@ export async function GET(request: Request) {
   const force = new URL(request.url).searchParams.get('force') === '1'
 
   // 1. Check cache (skip if ?force=1)
-  const cache = readCache()
+  const cache = await readCache()
   if (!force && cache && toHKTDateString(new Date(cache.generatedAt)) === todayHKT) {
     return NextResponse.json<BriefingResponse>({
       content: cache.content,
@@ -210,7 +208,7 @@ export async function GET(request: Request) {
   // 3. Generate fresh briefing via Gemini
   try {
     const content = await callGemini(todayHKT)
-    writeCache(content)
+    await writeCache(content)
     return NextResponse.json<BriefingResponse>({
       content,
       generatedAt: new Date().toISOString(),
