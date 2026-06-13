@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'symbols query param is required' }, { status: 400 })
   }
 
-  if (!process.env.FINNHUB_API_KEY) {
+  if (!process.env.FINNHUB_API_KEY && !process.env.FINNHUB_KEY) {
     return NextResponse.json(
       { error: 'FINNHUB_API_KEY is not configured', data: [] },
       { status: 503 },

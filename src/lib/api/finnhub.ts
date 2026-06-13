@@ -32,8 +32,10 @@ interface FinnhubProfile {
   name?: string
 }
 
+// Accept either name — FINNHUB_API_KEY (canonical, used locally) or FINNHUB_KEY
+// (as configured on Vercel), mirroring the dual-name Upstash handling in store.ts
 function apiKey(): string {
-  const key = process.env.FINNHUB_API_KEY
+  const key = process.env.FINNHUB_API_KEY ?? process.env.FINNHUB_KEY
   if (!key) throw new Error('FINNHUB_API_KEY is not set')
   return key
 }
