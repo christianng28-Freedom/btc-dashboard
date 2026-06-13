@@ -8,6 +8,18 @@ export const dynamic = 'force-dynamic'
 const WATCHLIST_KEY = 'watchlist:equities'
 const PROPOSALS_KEY = 'watchlist:proposals'
 
+// Mutating the watchlist is owner-only — gated behind CRON_SECRET, same auth as
+// the agent run endpoint. Accepts a "Bearer <secret>" header or "?key=<secret>".
+function isAuthorized(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET
+  if (!secret) {
+    // No secret configured: only allow in local dev, never in production
+    return process.env.NODE_ENV !== 'production'
+  }
+  if (request.headers.get('authorization') === `Bearer ${secret}`) return true
+  return request.nextUrl.searchParams.get('key') === secret
+}
+
 /** GET /api/agents/watchlist — current watchlist + pending proposals */
 export async function GET() {
   try {
@@ -24,6 +36,9 @@ export async function GET() {
  * Only the user approves — agents can only queue proposals.
  */
 export async function POST(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const body = (await request.json()) as {
       decision?: 'approve' | 'reject'

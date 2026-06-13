@@ -19,6 +19,10 @@ interface WatchlistResponse {
   proposals: Array<{ action: 'add' | 'remove'; ticker: string; rationale: string; proposedAt: string }>
 }
 
+// CRON_SECRET stored only in this browser — gates both "run now" and watchlist
+// approve/reject so shared viewers can't mutate the watchlist
+const RUN_KEY_STORAGE = 'cmd-agent-run-key'
+
 const AGENT_LABELS: Record<string, string> = {
   momentum: 'Momentum Analyst',
   news: 'News/Event Analyst',
@@ -56,11 +60,23 @@ function WatchlistPanel() {
   const { data } = useQuery({ queryKey: ['watchlist'], queryFn: fetchWatchlist, refetchInterval: 300_000 })
 
   const decide = async (decision: 'approve' | 'reject', ticker: string, action: 'add' | 'remove') => {
-    await fetch('/api/agents/watchlist', {
+    // Approving/rejecting mutates the shared watchlist, so it's gated behind the
+    // CRON_SECRET (same key as "run now"); dev needs no key
+    const runKey = typeof window !== 'undefined' ? localStorage.getItem(RUN_KEY_STORAGE) ?? '' : ''
+    const url = runKey ? `/api/agents/watchlist?key=${encodeURIComponent(runKey)}` : '/api/agents/watchlist'
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ decision, ticker, action }),
     })
+    if (res.status === 401) {
+      window.alert(
+        runKey
+          ? 'Unauthorized — the saved run key does not match the CRON_SECRET. Use the key icon next to "Run now" to update it.'
+          : 'Approving proposals needs the run key (CRON_SECRET). Use the key icon next to "Run now" to set it.',
+      )
+      return
+    }
     await queryClient.invalidateQueries({ queryKey: ['watchlist'] })
   }
 
@@ -197,8 +213,6 @@ function ReportCard({ report }: { report: AgentReport }) {
     </div>
   )
 }
-
-const RUN_KEY_STORAGE = 'cmd-agent-run-key'
 
 export default function DeskPage() {
   const [agentFilter, setAgentFilter] = useState<string | null>(null)
