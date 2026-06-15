@@ -53,6 +53,57 @@ the full human-readable report in GitHub-flavored Markdown (use ## headings,
 bold key numbers, keep it under 400 words, no preamble). Numbers in
 "markdown" must match the structured fields exactly.`
 
+/** "bottleneck_thesis_updates" → "Bottleneck Thesis Updates" */
+function humanizeKey(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Render one object as a single bullet — pretty for {action,ticker,rationale}
+ *  shaped items, generic key: value otherwise. */
+function objectBullet(obj: Record<string, unknown>): string {
+  const { action, ticker, rationale } = obj as {
+    action?: unknown; ticker?: unknown; rationale?: unknown
+  }
+  if (typeof ticker === 'string') {
+    const head = typeof action === 'string' ? `${action.toUpperCase()} ${ticker}` : ticker
+    return `**${head}**${typeof rationale === 'string' ? ` — ${rationale}` : ''}`
+  }
+  return Object.entries(obj)
+    .map(([k, v]) => `${humanizeKey(k)}: ${String(v)}`)
+    .join(', ')
+}
+
+/**
+ * Last-resort body when the model omits "markdown": turn the validated
+ * structured fields into readable Markdown the desk renderer understands
+ * (## headings + bullet lists) rather than dumping raw JSON.
+ */
+function synthesizeMarkdown(structured: Record<string, unknown>): string {
+  const out = [
+    '_(auto-generated summary — the model returned structured data but no written report)_',
+  ]
+  for (const [key, value] of Object.entries(structured)) {
+    if (value == null) continue
+    if (Array.isArray(value)) {
+      if (value.length === 0) continue
+      out.push(`## ${humanizeKey(key)}`)
+      const allShort = value.every((v) => typeof v === 'string' && v.length <= 12 && !v.includes(' '))
+      if (allShort) {
+        out.push(`- ${value.join(' · ')}`) // tickers etc. on one line
+      } else {
+        for (const item of value) {
+          out.push(`- ${item && typeof item === 'object' ? objectBullet(item as Record<string, unknown>) : String(item)}`)
+        }
+      }
+    } else if (typeof value === 'object') {
+      out.push(`## ${humanizeKey(key)}`, `- ${objectBullet(value as Record<string, unknown>)}`)
+    } else {
+      out.push(`**${humanizeKey(key)}:** ${String(value)}`)
+    }
+  }
+  return out.join('\n\n')
+}
+
 export async function runAgent<TStructured extends Record<string, unknown>>(
   def: AgentDefinition<TStructured>,
 ): Promise<RunResult<TStructured>> {
@@ -82,7 +133,7 @@ ${FORMAT_RULES}`
     // are fine — don't waste a validated run over the missing prose
     if (!markdown || typeof markdown !== 'string') {
       console.warn(`[agent:${def.name}] model omitted markdown body — synthesizing from structured output`)
-      markdown = `_(report body omitted by model — structured output below)_\n\n\`\`\`json\n${JSON.stringify(structured, null, 2)}\n\`\`\``
+      markdown = synthesizeMarkdown(structured)
     }
 
     const generatedAt = new Date().toISOString()
