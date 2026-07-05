@@ -26,16 +26,17 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Investment Command Centre',
   description: 'Multi-asset investment analytics dashboard',
-  manifest: '/manifest.json',
+  // Metadata URLs are not auto-prefixed by basePath — keep in sync with next.config.ts
+  manifest: '/demo/dashboard/manifest.json',
   appleWebApp: {
     capable: true,
     title: 'Command',
     statusBarStyle: 'black-translucent',
   },
   icons: {
-    icon: '/icon.svg',
+    icon: '/demo/dashboard/icon.svg',
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/demo/dashboard/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 }

@@ -90,7 +90,8 @@ export function NationStateMap({ countries }: Props) {
           height={400}
           style={{ width: '100%', height: 'auto' }}
         >
-          <Geographies geography="/world-110m.json">
+          {/* public/ assets are served under basePath — keep in sync with next.config.ts */}
+          <Geographies geography="/demo/dashboard/world-110m.json">
             {({ geographies }) =>
               geographies.map((geo) => {
                 const geoId = String(geo.id)

@@ -6,18 +6,18 @@
   "background_color": "#05070A",
   "display": "standalone",
   "orientation": "any",
-  "scope": "/",
-  "start_url": "/",
+  "scope": "/demo/dashboard/",
+  "start_url": "/demo/dashboard",
   "categories": ["finance"],
   "icons": [
     {
-      "src": "/apple-icon.png",
+      "src": "/demo/dashboard/apple-icon.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "/demo/dashboard/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

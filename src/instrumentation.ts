@@ -19,7 +19,8 @@ function msUntilNext8amHKT(): number {
 async function prewarmBriefing(): Promise<void> {
   try {
     const port = process.env.PORT ?? '3000'
-    const res = await fetch(`http://localhost:${port}/api/briefing`)
+    // API routes live under basePath — keep in sync with next.config.ts
+    const res = await fetch(`http://localhost:${port}/demo/dashboard/api/briefing`)
     const data = await res.json() as { source: string }
     console.log(`[briefing-scheduler] ${new Date().toISOString()} — source: ${data.source}`)
   } catch (err) {
