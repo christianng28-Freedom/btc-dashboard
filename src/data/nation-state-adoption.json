@@ -6,7 +6,7 @@
     "tier": "legal-tender",
     "tierLabel": "Legal Tender",
     "since": "2021-09-07",
-    "details": "First country to adopt Bitcoin as legal tender (2021). In January 2025, under a $1.4B IMF agreement, Congress made private-sector acceptance voluntary and ended BTC tax payments — Bitcoin keeps nominal legal-tender status but is no longer defined as 'currency'. The government continues accumulating, with a national reserve above 6,000 BTC.",
+    "details": "First country to adopt Bitcoin as legal tender (2021). In January 2025, under a $1.4B IMF agreement, Congress made private-sector acceptance voluntary and ended BTC tax payments; Bitcoin keeps nominal legal-tender status but is no longer defined as ‘currency’. The national reserve stands at about 7,764 BTC, and the IMF confirmed in September 2026 that additions since mid-2025 came from private donations rather than public funds.",
     "flag": "🇸🇻"
   },
   {
@@ -26,7 +26,7 @@
     "tier": "permissive",
     "tierLabel": "Permissive",
     "since": "2025-01-23",
-    "details": "Strategic Bitcoin Reserve (~325k BTC) with a custody framework formalised in March 2026. GENIUS Act (July 2025) created the federal stablecoin framework; the CLARITY market-structure act passed the House 294-134 and advanced through Senate Banking in May 2026. SEC dropped its major crypto enforcement cases in 2025.",
+    "details": "Strategic Bitcoin Reserve (~325k BTC) with a custody framework formalised in March 2026. GENIUS Act (July 2025) created the federal stablecoin framework, but the CLARITY market-structure act failed a Senate cloture vote in September 2026 after passing the House and Senate Banking. The SEC proposed Regulation Crypto Assets (August 2026) and the CFTC sent a crypto market-structure rule to White House review; House committees advanced Bitcoin reserve and crypto tax bills in September 2026.",
     "flag": "🇺🇸"
   },
   {
@@ -66,7 +66,7 @@
     "tier": "permissive",
     "tierLabel": "Permissive",
     "since": "2017-04-01",
-    "details": "Bitcoin recognised as legal property since 2017. FSA-licensed exchanges must comply with strict AML/KYC and custody requirements. Japan lowered the corporate tax rate on unrealised crypto gains in 2024, encouraging institutional adoption.",
+    "details": "Bitcoin recognised as legal property since 2017 under FSA-licensed exchanges with strict AML/KYC and custody rules. In July 2026 the Diet moved crypto under the Financial Instruments and Exchange Act from fiscal 2027, opening the door to spot bitcoin ETFs, and gains on exchange-traded crypto move to a flat 20% tax from 2028 instead of progressive rates of up to 55%.",
     "flag": "🇯🇵"
   },
   {
@@ -116,7 +116,7 @@
     "tier": "permissive",
     "tierLabel": "Permissive",
     "since": "2024-04-30",
-    "details": "First major Asian hub with retail spot Bitcoin and Ether ETFs (April 2024). The SFC's ASPIRe roadmap is expanding licensed virtual-asset services, and the Stablecoins Ordinance (August 2025) created an HKMA licensing regime for fiat-referenced issuers.",
+    "details": "First major Asian hub with retail spot Bitcoin and Ether ETFs (April 2024). The Stablecoins Ordinance (August 2025) created an HKMA licensing regime; the first two issuer licences went to Anchorpoint and HSBC in April 2026 and the first licensed HKD stablecoin, HKDAP, launched to professional investors in August 2026. The SFC’s ASPIRe roadmap continues to expand licensed virtual-asset services.",
     "flag": "🇭🇰"
   },
   {
@@ -136,7 +136,7 @@
     "tier": "permissive",
     "tierLabel": "Permissive",
     "since": "2023-01-01",
-    "details": "FCA registration required for crypto firms operating in the UK. The Financial Services and Markets Act 2023 expanded the regulatory perimeter to cover crypto. HMRC treats Bitcoin as a capital asset with standard CGT rates.",
+    "details": "FCA registration required for crypto firms operating in the UK, with the Financial Services and Markets Act 2023 bringing crypto into the regulatory perimeter. The FCA published final rules for the full cryptoasset regime in June 2026: the authorisation gateway opens 30 September 2026 and the regime goes live on 25 October 2027. HMRC treats Bitcoin as a capital asset with standard CGT rates.",
     "flag": "🇬🇧"
   },
   {
@@ -213,10 +213,10 @@
     "name": "Russia",
     "alpha2": "RU",
     "numericCode": "643",
-    "tier": "restrictive",
-    "tierLabel": "Restrictive",
-    "since": null,
-    "details": "Crypto cannot be used as a means of payment domestically. Mining is legal and Russia hosts significant hash rate, particularly after China's ban. The government legalised crypto for international trade settlements in 2024 amid sanctions.",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": "2026-09-01",
+    "details": "Russia's first comprehensive crypto market law, signed in August 2026, put exchanges, custodians and brokers under Bank of Russia supervision from 1 September 2026, with non-qualified retail investors capped at 300,000 rubles a year per intermediary. Crypto still cannot be used as a means of payment domestically, though cross-border trade settlement has been permitted since 2024. Mining is legal and Russia hosts significant hash rate.",
     "flag": "🇷🇺"
   },
   {
@@ -333,20 +333,20 @@
     "name": "Kazakhstan",
     "alpha2": "KZ",
     "numericCode": "398",
-    "tier": "neutral",
-    "tierLabel": "Neutral",
-    "since": null,
-    "details": "Kazakhstan became a major global mining hub following China's 2021 ban. The AIFC (Astana International Financial Centre) has a progressive crypto licensing regime. Mining is taxed and the government has moved to regulate energy usage for miners.",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2026-05-01",
+    "details": "Major global mining hub since China’s 2021 ban, with a progressive licensing regime at the AIFC. A digital financial assets law took effect on 1 May 2026, and a July 2026 presidential decree exempts individuals’ crypto income earned through licensed domestic platforms from personal income tax for three years, with a disclosure window for assets held on foreign venues. Mining is taxed and can use associated gas from oil fields.",
     "flag": "🇰🇿"
   },
   {
     "name": "Pakistan",
     "alpha2": "PK",
     "numericCode": "586",
-    "tier": "neutral",
-    "tierLabel": "Neutral",
-    "since": "2025-05-28",
-    "details": "Sharp pivot from years of central-bank restrictions: Pakistan announced a government-led Strategic Bitcoin Reserve in 2025, allocated surplus power for mining, and formed the Pakistan Crypto Council to build a licensing framework. Grassroots P2P adoption was already among the world's highest.",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2026-08-22",
+    "details": "Sharp pivot from years of central-bank restrictions: Pakistan announced a government-led Strategic Bitcoin Reserve in 2025, allocated surplus power for mining, and passed the Virtual Assets Act 2026. The Pakistan Virtual Assets Regulatory Authority opened licensing in August 2026 with ten licence categories, giving exchanges, custodians and other providers a legal front door. Grassroots P2P adoption was already among the world’s highest.",
     "flag": "🇵🇰"
   },
   {
@@ -358,5 +358,35 @@
     "since": null,
     "details": "Egypt's Dar al-Ifta (Islamic advisory body) issued a fatwa in 2018 declaring Bitcoin trading haram. The CBE has warned against crypto. While no formal blanket ban exists, regulated financial institutions are prohibited from dealing in crypto.",
     "flag": "🇪🇬"
+  },
+  {
+    "name": "Taiwan",
+    "alpha2": "TW",
+    "numericCode": "158",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2026-06-30",
+    "details": "The Virtual Asset Service Act, passed on 30 June 2026, replaces AML registration with FSC licensing for all virtual asset service providers and requires central bank and FSC approval plus full reserves for stablecoin issuers. Registered firms have 12 months to apply and up to 21 months to be licensed; the Executive Yuan will set the effective date.",
+    "flag": "🇹🇼"
+  },
+  {
+    "name": "Kenya",
+    "alpha2": "KE",
+    "numericCode": "404",
+    "tier": "permissive",
+    "tierLabel": "Permissive",
+    "since": "2026-07-22",
+    "details": "The VASP Act (October 2025) and the VASP Regulations gazetted in July 2026 created a licensing regime split between the Central Bank of Kenya (fiat conversion, stablecoin issuers) and the Capital Markets Authority (exchanges, token issuance, tokenisation). Existing operators must be licensed by November 2026. Kenya has one of Africa’s largest grassroots crypto user bases.",
+    "flag": "🇰🇪"
+  },
+  {
+    "name": "Poland",
+    "alpha2": "PL",
+    "numericCode": "616",
+    "tier": "neutral",
+    "tierLabel": "Neutral",
+    "since": null,
+    "details": "MiCA applies, but Poland is the only EU member without a domestic licensing framework after President Nawrocki vetoed the Crypto-Asset Market Act three times and the Sejm failed to override the latest veto in September 2026. Local firms must obtain MiCA authorisation in other member states, while passported foreign providers can serve Polish clients.",
+    "flag": "🇵🇱"
   }
 ]

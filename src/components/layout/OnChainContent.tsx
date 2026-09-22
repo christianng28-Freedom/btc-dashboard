@@ -117,9 +117,88 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 const NATIVE_W = 1440
 const NATIVE_H = 800
 
+// Every charts.checkonchain.com URL is an ~800-byte GitHub Pages wrapper whose
+// only content is a nested iframe of the real Plotly document on
+// charts-cdn.checkonchain.com (identical path). Embedding the CDN document
+// directly removes one full navigation (DNS + TLS + a Fastly round trip) from
+// each chart's critical path. The CDN sends no X-Frame-Options or
+// frame-ancestors restriction. The "checkonchain.com" link below each chart
+// keeps the canonical wrapper URL. If CheckOnChain ever locks the CDN down,
+// set EMBED_CDN_DIRECTLY to false to go back through the wrapper.
+const EMBED_CDN_DIRECTLY = true
+const WRAPPER_ORIGIN = 'https://charts.checkonchain.com/'
+const CDN_ORIGIN = 'https://charts-cdn.checkonchain.com/'
+
+function embedUrl(src: string): string {
+  return EMBED_CDN_DIRECTLY ? src.replace(WRAPPER_ORIGIN, CDN_ORIGIN) : src
+}
+
+// ---------------------------------------------------------------------------
+// Load scheduler
+//
+// Each chart is a 0.5–1.5 MB (compressed) Plotly document served with
+// Cache-Control: no-cache, plus Plotly.js and a render that all run on the one
+// renderer main thread Chrome gives the checkonchain.com site. With native
+// loading="lazy" the browser kicked off ~10 of them at once, so the charts on
+// screen shared bandwidth with charts below the fold and queued behind each
+// other's Plotly work: the first chart appeared late and the rest arrived in
+// a random order. This queue starts at most MAX_CONCURRENT iframes at a time,
+// closest to the viewport first, and frees a slot when the iframe fires load
+// or after SLOT_TIMEOUT_MS, so one stalled origin response (observed at 30 s+
+// for some charts) cannot hold everything else up.
+// ---------------------------------------------------------------------------
+const MAX_CONCURRENT = 3
+const SLOT_TIMEOUT_MS = 10_000
+// Start queueing charts this far outside the viewport (IntersectionObserver
+// rootMargin) so the next row is usually ready before it scrolls into view.
+const QUEUE_AHEAD_MARGIN = '50% 0px'
+
+const pendingLoads = new Map<HTMLElement, () => void>()
+let activeLoads = 0
+
+function distanceFromViewport(el: HTMLElement): number {
+  const rect = el.getBoundingClientRect()
+  if (rect.bottom < 0) return -rect.bottom
+  if (rect.top > window.innerHeight) return rect.top - window.innerHeight
+  return 0
+}
+
+function pumpLoadQueue() {
+  while (activeLoads < MAX_CONCURRENT && pendingLoads.size > 0) {
+    const [next] = [...pendingLoads.keys()]
+      .map((el) => ({ el, distance: distanceFromViewport(el), top: el.getBoundingClientRect().top }))
+      .sort((a, b) => a.distance - b.distance || a.top - b.top)
+    const start = pendingLoads.get(next.el)
+    pendingLoads.delete(next.el)
+    if (!start) continue
+    activeLoads++
+    start()
+  }
+}
+
+function requestLoadSlot(el: HTMLElement, start: () => void) {
+  pendingLoads.set(el, start)
+  pumpLoadQueue()
+}
+
+function cancelLoadRequest(el: HTMLElement) {
+  pendingLoads.delete(el)
+}
+
+function releaseLoadSlot() {
+  activeLoads = Math.max(0, activeLoads - 1)
+  pumpLoadQueue()
+}
+
+type LoadPhase = 'queued' | 'loading' | 'loaded'
+
 function CheckOnChainIframe({ src, title }: { src: string; title: string }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
+  const [phase, setPhase] = useState<LoadPhase>('queued')
+  const [attempt, setAttempt] = useState(0)
+  const [slow, setSlow] = useState(false)
+  const holdsSlot = useRef(false)
 
   useEffect(() => {
     const el = wrapperRef.current
@@ -133,35 +212,130 @@ function CheckOnChainIframe({ src, title }: { src: string; title: string }) {
     return () => obs.disconnect()
   }, [])
 
+  const releaseSlot = useCallback(() => {
+    if (!holdsSlot.current) return
+    holdsSlot.current = false
+    releaseLoadSlot()
+  }, [])
+
+  // Wait for a load slot while near the viewport. Withdraw when scrolled away
+  // or hidden (a display:none panel reports no intersection) so the charts
+  // actually on screen always go first.
+  useEffect(() => {
+    if (phase !== 'queued') return
+    const el = wrapperRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1]
+        if (!entry) return
+        if (entry.isIntersecting) {
+          requestLoadSlot(el, () => {
+            holdsSlot.current = true
+            setPhase('loading')
+          })
+        } else {
+          cancelLoadRequest(el)
+        }
+      },
+      { rootMargin: QUEUE_AHEAD_MARGIN },
+    )
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      cancelLoadRequest(el)
+    }
+  }, [phase])
+
+  // Free the slot after a timeout so a stalled origin can't block the queue.
+  // The frame keeps loading in the background; the user can also retry.
+  useEffect(() => {
+    if (phase !== 'loading') return
+    const timer = setTimeout(() => {
+      releaseSlot()
+      setSlow(true)
+    }, SLOT_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [phase, releaseSlot])
+
+  // Never leave a slot held by an unmounted frame.
+  useEffect(() => releaseSlot, [releaseSlot])
+
+  const handleLoad = useCallback(() => {
+    setPhase('loaded')
+    setSlow(false)
+    releaseSlot()
+  }, [releaseSlot])
+
+  const retry = useCallback(() => {
+    releaseSlot()
+    setSlow(false)
+    setAttempt((n) => n + 1)
+    setPhase('queued')
+  }, [releaseSlot])
+
   // Derive a short label from the title (strip " – CheckOnChain" suffix)
   const label = title.replace(/\s*[–—-]\s*CheckOnChain$/i, '')
+  const loaded = phase === 'loaded'
 
   return (
     <div className="flex flex-col gap-1">
       <div
         ref={wrapperRef}
-        className="w-full rounded-lg overflow-hidden border border-[#1a1a2e]"
-        style={{ height: Math.round(NATIVE_H * scale), background: '#ffffff' }}
+        className="relative w-full rounded-lg overflow-hidden border border-[#1a1a2e]"
+        style={{
+          height: Math.round(NATIVE_H * scale),
+          // The Plotly documents have no background of their own, so the
+          // wrapper supplies the white paper once the chart is in; it stays
+          // dark under the placeholder so nothing flashes white while loading.
+          background: loaded ? '#ffffff' : '#0d0d14',
+          transition: 'background-color 400ms ease-out',
+        }}
       >
-        <iframe
-          src={src}
-          title={title}
-          // Lazy: ~20 Plotly iframes loading eagerly all compete for bandwidth
-          // on first visit, delaying the charts actually on screen. The
-          // browser preloads ahead of the viewport, and the persistent panel
-          // keeps anything loaded alive across tab switches.
-          loading="lazy"
-          scrolling="no"
-          style={{
-            width: NATIVE_W,
-            height: NATIVE_H,
-            border: 'none',
-            display: 'block',
-            colorScheme: 'light',
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left',
-          }}
-        />
+        {phase !== 'queued' && (
+          <iframe
+            key={attempt}
+            src={embedUrl(src)}
+            title={title}
+            onLoad={handleLoad}
+            scrolling="no"
+            style={{
+              width: NATIVE_W,
+              height: NATIVE_H,
+              border: 'none',
+              display: 'block',
+              colorScheme: 'light',
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              opacity: loaded ? 1 : 0,
+              transition: 'opacity 400ms ease-out',
+            }}
+          />
+        )}
+        {!loaded && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <span
+              className={`w-6 h-6 rounded-full border-2 border-[#1f2937] ${
+                phase === 'loading' ? 'border-t-[#f7931a] animate-spin' : 'opacity-60'
+              }`}
+            />
+            <div>
+              <div className="text-[12px] font-medium text-[#8b8b9e]">{label}</div>
+              <div className="mt-1 text-[10px] font-mono uppercase tracking-wider text-[#444455]">
+                {phase === 'queued' ? 'Queued' : slow ? 'Slow response from CheckOnChain' : 'Loading chart'}
+              </div>
+            </div>
+            {slow && (
+              <button
+                type="button"
+                onClick={retry}
+                className="px-3 py-1 rounded-md text-[10px] font-medium text-[#888] border border-[#2a2a3e] hover:text-white hover:border-[#444] transition-colors"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <a
         href={src}
@@ -194,7 +368,7 @@ export function OnChainContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CheckOnChainIframe
             src="https://charts.checkonchain.com/btconchain/pricing/pricing_mvrv_bands/pricing_mvrv_bands_light.html"
-            title="Realised Price & MVRV – CheckOnChain"
+            title="MVRV Pricing Bands – CheckOnChain"
           />
           <CheckOnChainIframe
             src="https://charts.checkonchain.com/btconchain/unrealised/nupl_bycohort/nupl_bycohort_light.html"
@@ -202,7 +376,7 @@ export function OnChainContent() {
           />
           <CheckOnChainIframe
             src="https://charts.checkonchain.com/btconchain/pricing/ism_pmi_bitcoin/ism_pmi_bitcoin_light.html"
-            title="Power Law Model – CheckOnChain"
+            title="Log-Regression vs ISM PMIs – CheckOnChain"
           />
           <CheckOnChainIframe
             src="https://charts.checkonchain.com/btconchain/pricing/pricing_mayermultiple/pricing_mayermultiple_light.html"
