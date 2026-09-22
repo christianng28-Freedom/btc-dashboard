@@ -341,7 +341,7 @@ function CheckOnChainIframe({ src, title }: { src: string; title: string }) {
         href={src}
         target="_blank"
         rel="noopener noreferrer"
-        className="self-end text-[10px] text-[#444] hover:text-[#888] transition-colors leading-none"
+        className="self-end text-[10px] text-white hover:text-[#f7931a] transition-colors leading-none"
         title={`Open ${label} on CheckOnChain`}
       >
         checkonchain.com ↗
