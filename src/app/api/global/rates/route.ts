@@ -87,6 +87,25 @@ function r2(v: number): number {
   return Math.round(v * 100) / 100
 }
 
+/** Keep one observation per week for long charts, plus the latest 100 trading
+ * observations. The browser charts thin these histories again to ~200–300
+ * points, so sending every daily observation only delays parsing and render.
+ * Policy change dates are retained for the Fed Funds step chart.
+ */
+function chartSeries(points: DataPoint[], preserve = new Set<string>()): DataPoint[] {
+  const recentStart = Math.max(0, points.length - 100)
+  let week = ''
+  return points.filter((point, index) => {
+    const d = new Date(`${point.date}T00:00:00Z`)
+    const monday = new Date(d)
+    monday.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
+    const weekKey = monday.toISOString().slice(0, 10)
+    const firstThisWeek = weekKey !== week
+    week = weekKey
+    return index === 0 || index >= recentStart || firstThisWeek || preserve.has(point.date)
+  })
+}
+
 /** Find the latest date <= targetDate in the map and return its value. */
 function valueAtDate(
   map: Map<string, number>,
@@ -141,6 +160,10 @@ export async function GET() {
       return NextResponse.json({ error: 'FRED_API_KEY not configured' }, { status: 500 })
     }
 
+    // These seven maturities only feed the current/1Y/2Y curve snapshot.
+    // A three-year window leaves a buffer for weekends and missing observations.
+    const snapshotStart = `${new Date().getUTCFullYear() - 3}-01-01`
+
     const [
       dgs1moMap, dgs3moMap, dgs6moMap, dgs1Map, dgs2Map, dgs3Map,
       dgs5Map, dgs7Map, dgs10Map, dgs20Map, dgs30Map,
@@ -151,14 +174,14 @@ export async function GET() {
       usrecMap,
       moveMap, moveQuote,
     ] = await Promise.all([
-      fetchFREDSeries('DGS1MO',       '2015-01-01', 21600),
-      fetchFREDSeries('DGS3MO',       '2015-01-01', 21600),
-      fetchFREDSeries('DGS6MO',       '2015-01-01', 21600),
-      fetchFREDSeries('DGS1',         '2015-01-01', 21600),
+      fetchFREDSeries('DGS1MO',       snapshotStart, 21600),
+      fetchFREDSeries('DGS3MO',       snapshotStart, 21600),
+      fetchFREDSeries('DGS6MO',       snapshotStart, 21600),
+      fetchFREDSeries('DGS1',         snapshotStart, 21600),
       fetchFREDSeries('DGS2',         '2015-01-01', 21600),
-      fetchFREDSeries('DGS3',         '2015-01-01', 21600),
-      fetchFREDSeries('DGS5',         '2015-01-01', 21600),
-      fetchFREDSeries('DGS7',         '2015-01-01', 21600),
+      fetchFREDSeries('DGS3',         snapshotStart, 21600),
+      fetchFREDSeries('DGS5',         snapshotStart, 21600),
+      fetchFREDSeries('DGS7',         snapshotStart, 21600),
       fetchFREDSeries('DGS10',        '2015-01-01', 21600),
       fetchFREDSeries('DGS20',        '2015-01-01', 21600),
       fetchFREDSeries('DGS30',        '2015-01-01', 21600),
@@ -214,6 +237,14 @@ export async function GET() {
     // ── Key Rates ────────────────────────────────────────────────────────
     const fedFundsArr      = mapToArray(dfedtaruMap)
     const fedFundsLowerArr = mapToArray(dfedtarlMap)
+    const policyChangeDates = new Set<string>()
+    for (const series of [fedFundsArr, fedFundsLowerArr]) {
+      series.forEach((point, index) => {
+        if (index > 0 && point.value !== series[index - 1].value) {
+          policyChangeDates.add(point.date)
+        }
+      })
+    }
     const dgs2Arr     = mapToArray(dgs2Map)
     const dgs20Arr    = mapToArray(dgs20Map)
     const dgs30Arr    = mapToArray(dgs30Map)
@@ -249,8 +280,8 @@ export async function GET() {
         twoYearsAgoDate,
       },
       spreads: {
-        spread10y2y: spread10y2yArr,
-        spread10y3m: spread10y3mArr,
+        spread10y2y: chartSeries(spread10y2yArr),
+        spread10y3m: chartSeries(spread10y3mArr),
         latest: {
           spread10y2y: {
             value:  r2(last(spread10y2yArr)?.value ?? 0),
@@ -265,13 +296,13 @@ export async function GET() {
         },
       },
       keyRates: {
-        fedFunds:      fedFundsArr,
-        fedFundsLower: fedFundsLowerArr,
-        y2:            dgs2Arr,
-        y10:      dgs10Arr,
-        y20:      dgs20Arr,
-        y30:      dgs30Arr,
-        sofr:     sofrArr,
+        fedFunds:      chartSeries(fedFundsArr, policyChangeDates),
+        fedFundsLower: chartSeries(fedFundsLowerArr, policyChangeDates),
+        y2:            chartSeries(dgs2Arr),
+        y10:           chartSeries(dgs10Arr),
+        y20:           chartSeries(dgs20Arr),
+        y30:           chartSeries(dgs30Arr),
+        sofr:          chartSeries(sofrArr),
         latest: {
           fedFunds: {
             value: r2(last(fedFundsArr)?.value ?? 0),
@@ -304,8 +335,8 @@ export async function GET() {
         },
       },
       credit: {
-        hyOas: hyOasArr,
-        igOas: igOasArr,
+        hyOas: chartSeries(hyOasArr),
+        igOas: chartSeries(igOasArr),
         latest: {
           hyOas: {
             value:  r2(last(hyOasArr)?.value ?? 0),
@@ -320,8 +351,8 @@ export async function GET() {
         },
       },
       realRates: {
-        tipsReal10y:  tipsReal10yArr,
-        breakeven10y: breakeven10yArr,
+        tipsReal10y:  chartSeries(tipsReal10yArr),
+        breakeven10y: chartSeries(breakeven10yArr),
         latest: {
           tipsReal10y: {
             value:  r2(last(tipsReal10yArr)?.value ?? 0),
@@ -337,7 +368,7 @@ export async function GET() {
       },
       recessionBands,
       move: {
-        history: moveArr,
+        history: chartSeries(moveArr),
         latest:  moveLatest,
       },
     }
